@@ -2,6 +2,7 @@
 pub mod adjacencylist;
 pub mod hashedgrid;
 pub mod bitpackedgrid;
+pub mod samplingrid;
 
 /// A helper function that creates a map from a string given functions
 /// to initialize the map and add obstacles
