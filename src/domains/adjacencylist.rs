@@ -1,18 +1,20 @@
-use std::slice::Iter;
+//! # Adjacency List
+//! The following is an adjacency list representation of a graph implemented
+//! with vectors that hold a tuple of the node and the weight of the edge.
 
+/// An adjacency list representation of a graph
 #[derive(Debug, Clone)]
 pub struct AdjacencyList {
     pub nodes: Vec<Vec<(usize, i32)>>,
 }
 
 impl AdjacencyList {
-
     /// Creates a new adjacency list with a given size
     /// ## Arguments
     /// * `size` - The number of nodes in the graph
     /// ## Returns
     /// A new adjacency list with a given size
-    pub fn new(size:usize) -> AdjacencyList {
+    pub fn new(size: usize) -> AdjacencyList {
         AdjacencyList {
             nodes: vec![Vec::new(); size],
         }
@@ -27,7 +29,7 @@ impl AdjacencyList {
     /// O(n) where n is the size of the node's adjacency list
     pub fn add_node(&mut self, node: Vec<(usize, i32)>) {
         for i in node.iter() {
-            if i.0  > self.len() {
+            if i.0 > self.len() {
                 panic!("Node does not exist");
             }
         }
@@ -48,11 +50,10 @@ impl AdjacencyList {
 
         self.nodes.remove(node);
         for i in 0..self.len() {
-            self.nodes[i] = self
-                .nodes[i]
+            self.nodes[i] = self.nodes[i]
                 .iter()
                 .filter(|&&x| x.0 != node)
-                .map(|x| if x.0 > node {(x.0-1,x.1)} else {*x})
+                .map(|x| if x.0 > node { (x.0 - 1, x.1) } else { *x })
                 .collect::<Vec<(usize, i32)>>();
         }
     }
@@ -170,7 +171,7 @@ impl AdjacencyList {
     /// Panics if the node does not exist
     /// ## Complexity
     /// O(n^2) where n is the number of nodes in the graph
-    pub fn remove_all_incoming(&mut self, node:usize) {
+    pub fn remove_all_incoming(&mut self, node: usize) {
         if node >= self.len() {
             panic!("Node does not exist");
         }
@@ -189,7 +190,7 @@ impl AdjacencyList {
     /// Creates an iterator over the nodes in the graph
     /// ## Returns
     /// An iterator over the nodes in the graph
-    pub fn iter(&self) -> Iter<Vec<(usize, i32)>> {
+    pub fn iter(&self) -> impl Iterator<Item = &Vec<(usize, i32)>> {
         self.nodes.iter()
     }
 
@@ -198,11 +199,11 @@ impl AdjacencyList {
     /// * `node` - The node to find the adjacent nodes of
     /// ## Returns
     /// A reference to the nodes adjacent to the given node
-    pub fn adjacent(&self, node: usize) -> &Vec<(usize, i32)> {
+    pub fn adjacent(&self, node: usize) -> impl Iterator<Item = (usize, i32)> {
         if node >= self.len() {
             panic!("Node does not exist");
         }
-        &self.nodes[node]
+        self.nodes[node].clone().into_iter()
     }
 
     /// Returns the degree of a given node
@@ -215,5 +216,52 @@ impl AdjacencyList {
             panic!("Node does not exist");
         }
         self.nodes[node].len()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::domains::adjacencylist::AdjacencyList;
+
+    #[test]
+    fn test_graph_length() {
+        let mut test = AdjacencyList::new(3);
+        test.add_node(vec![(1, 1), (2, 1)]);
+        test.add_edge(1, 2);
+        assert_eq!(test.len(), 4);
+    }
+
+    #[test]
+    fn test_graph_add() {
+        let mut test = AdjacencyList::new(3);
+        test.add_edge(1, 2);
+        assert_eq!(test.nodes[1], vec![(2, 1)]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_graph_add_panic() {
+        let mut test = AdjacencyList::new(3);
+        test.add_edge(1, 3);
+    }
+
+    #[test]
+    fn test_graph_remove_node() {
+        let mut test = AdjacencyList::new(3);
+        test.add_edges(0, 2);
+        test.add_edges(1, 2);
+        test.remove_node(1);
+        assert_eq!(test.len(), 2);
+        assert_eq!(test.nodes[0], vec![(1, 1)]);
+    }
+
+    #[test]
+    fn test_graph_naive_remove_node() {
+        let mut test = AdjacencyList::new(3);
+        test.add_edges(0, 2);
+        test.add_edges(1, 2);
+        test.naive_remove_node(1);
+        assert_eq!(test.len(), 3);
+        assert_eq!(test.adjacent(0).collect::<Vec<_>>(), vec![(2, 1)]);
     }
 }
