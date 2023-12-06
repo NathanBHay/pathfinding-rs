@@ -5,6 +5,8 @@
 //! each binary digit in the number represents a cell in the map. These cells
 //! are additionally padded with 2 rows and columns to avoid travelling out of 
 //! bounds.
+//! 
+//! TODO: Fix this as it currently breaks on maps
 
 use std::vec;
 
@@ -107,7 +109,7 @@ impl BitPackedGrid {
     pub fn print_cells(&self) -> String {
         print_cells(self.original_width, self.original_height, |x, y| {
             self.get_bit_value(x, y)
-        })
+        }, None)
     }
 
     /// Get the neighbors of a given cell

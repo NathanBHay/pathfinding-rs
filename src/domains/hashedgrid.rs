@@ -4,7 +4,7 @@
 
 use std::{collections::{HashSet, HashMap}, fs::read_to_string};
 
-use super::{create_map_from_string, print_cells, plot_cells, print_cells_with_path, plot_cells_with_heatmap};
+use super::{create_map_from_string, print_cells, plot_cells};
 
 /// A grid map whoch uses a hashset of obstacles to represent obstacles
 /// This is the simplest grid map implementation
@@ -155,20 +155,20 @@ impl HashedGrid {
 
     /// Prints the grid map where . is a free cell and @ is an obstacle
     pub fn print_cells(&self) -> String {
-        print_cells(self.width, self.height, |x, y| self.get_map_value(x, y))
+        print_cells(self.width, self.height, |x, y| self.get_map_value(x, y), None)
     }
 
     /// Prints the grid map where . is a free cell and @ is an obstacle
     pub fn print_cells_with_path(&self, path: Vec<(usize, usize)>) -> String {
-        print_cells_with_path(self.width, self.height, |x, y| self.get_map_value(x, y), Some(path))
+        print_cells(self.width, self.height, |x, y| self.get_map_value(x, y), Some(path))
     }
 
-    pub fn plot_cells(&self, filename: &str, path: Option<Vec<(usize, usize)>>) {
-        plot_cells(self.width, self.height, filename, |x, y| self.get_map_value(x, y), path)
+    pub fn plot_cells(&self, filename: &str, path: Vec<(usize, usize)>) {
+        plot_cells(self.width, self.height, filename, |x, y| self.get_map_value(x, y), Some(path), None)
     }
 
     pub fn plot_cells_with_heatmap(&self, filename: &str, heatmap: HashMap<(usize, usize), f64>) {
-        plot_cells_with_heatmap(self.width, self.height, filename, |x, y| self.get_map_value(x, y), heatmap)
+        plot_cells(self.width, self.height, filename, |x, y| self.get_map_value(x, y), None, Some(heatmap))
     }
     
 }
