@@ -2,9 +2,9 @@
 //! This is the simplest grid implementation and is fairly slow due
 //! to the possibility of hashing collisions.
 
-use std::{collections::HashSet, fs::read_to_string};
+use std::{collections::{HashSet, HashMap}, fs::read_to_string};
 
-use super::{create_map_from_string, print_cells};
+use super::{create_map_from_string, print_cells, plot_cells, print_cells_with_path, plot_cells_with_heatmap};
 
 /// A grid map whoch uses a hashset of obstacles to represent obstacles
 /// This is the simplest grid map implementation
@@ -157,6 +157,20 @@ impl HashedGrid {
     pub fn print_cells(&self) -> String {
         print_cells(self.width, self.height, |x, y| self.get_map_value(x, y))
     }
+
+    /// Prints the grid map where . is a free cell and @ is an obstacle
+    pub fn print_cells_with_path(&self, path: Vec<(usize, usize)>) -> String {
+        print_cells_with_path(self.width, self.height, |x, y| self.get_map_value(x, y), Some(path))
+    }
+
+    pub fn plot_cells(&self, filename: &str, path: Option<Vec<(usize, usize)>>) {
+        plot_cells(self.width, self.height, filename, |x, y| self.get_map_value(x, y), path)
+    }
+
+    pub fn plot_cells_with_heatmap(&self, filename: &str, heatmap: HashMap<(usize, usize), f64>) {
+        plot_cells_with_heatmap(self.width, self.height, filename, |x, y| self.get_map_value(x, y), heatmap)
+    }
+    
 }
 
 #[cfg(test)]
@@ -175,13 +189,13 @@ mod tests {
 
     #[test]
     fn test_grid_create_from_string() {
-        let map_str = ".....\n.@.@.\n.@.@.\n.@.@.\n.....\n";
+        let map_str = ".....\n.@.@.\n.@.@.\n.@.@.\n.....\n....@\n";
         let grid = HashedGrid::create_from_string(map_str.to_string());
         assert_eq!(grid.width, 5);
-        assert_eq!(grid.height, 5);
+        assert_eq!(grid.height, 6);
         assert_eq!(grid.get_map_value(0, 0), true);
         assert_eq!(grid.get_map_value(1, 1), false);
-        assert_eq!(grid.get_map_value(2, 2), true);
+        assert_eq!(grid.get_map_value(3, 1), false);
         assert_eq!(grid.get_map_value(3, 3), false);
         assert_eq!(grid.get_map_value(4, 4), true);
         assert_eq!(grid.print_cells(), map_str);

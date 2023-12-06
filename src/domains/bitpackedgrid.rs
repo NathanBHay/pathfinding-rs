@@ -162,14 +162,14 @@ mod tests {
 
     #[test]
     fn test_bitpackedgrid_create() {
-        let map_str = "...@.\n.@...\n.@.@.\n...@.\n";
+        let map_str = ".....\n.@.@.\n.@.@.\n.@.@.\n.....\n....@\n";
         let grid = BitPackedGrid::create_from_string(map_str.to_string());
         assert_eq!(grid.print_cells(), map_str);
     }
 
     #[test]
     fn test_bitpackedgrid_get_neighbours() {
-        let grid = BitPackedGrid::create_from_string("...@.\n.@...\n.@.@.\n...@.\n".to_string());
+        let grid = BitPackedGrid::create_from_string(".....\n.@.@.\n.@.@.\n.@.@.\n.....\n....@\n".to_string());
         assert_eq!(grid.adjacent(0, 0, false).collect::<Vec<_>>(), vec![(1, 0), (0, 1)]);
     }
 }

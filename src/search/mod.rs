@@ -2,8 +2,9 @@
 
 use std::{collections::HashMap, hash::Hash, ops::Add};
 
-mod uninformed;
-mod astar;
+pub mod uninformed;
+pub mod astar;
+pub mod idastar;
 
 /// Reconstructs a path from a given node to the start node
 /// ## Arguments
@@ -31,7 +32,7 @@ where
 /// ## Returns
 /// A vector of nodes from the start to the given node and the cost of the path
 pub(crate) fn reconstruct_path_with_cost<N, C>(
-    parent: HashMap<N, Option<(N, C)>>,
+    parent: HashMap<N, (Option<N>, C)>,
     mut node: N,
 ) -> (Vec<N>, C)
 where
@@ -40,7 +41,7 @@ where
 {
     let mut path = vec![node.clone()];
     let mut cost = C::default();
-    while let Some(Some((prev, c))) = parent.get(&node) {
+    while let Some((Some(prev), c)) = parent.get(&node) {
         path.push(prev.clone());
         cost = cost + c.clone();
         node = prev.clone();
