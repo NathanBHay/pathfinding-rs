@@ -10,13 +10,13 @@
 
 use std::vec;
 
-use super::{create_map_from_string, print_cells};
+use super::{create_map_from_string, print_cells, neighbors};
 
 /// A grid of bits packed into usize-bit words
 #[derive(Debug)]
 pub struct BitPackedGrid {
-    original_height: usize,
-    original_width: usize,
+    pub original_height: usize,
+    pub original_width: usize,
     map_height: usize,
     map_width: usize,
     map_width_in_words: usize,
@@ -31,7 +31,7 @@ impl BitPackedGrid {
     const INDEX_MASK: usize = BitPackedGrid::BITS_PER_WORD - 1;
 
     /// Create a new BitPackedGrid
-    pub fn new(height: usize, width: usize) -> BitPackedGrid {
+    pub fn new(width: usize, height: usize) -> BitPackedGrid {
         let map_width_in_words = (width >> BitPackedGrid::LOG2_BITS_PER_WORD) + 1;
         let map_width = map_width_in_words << BitPackedGrid::LOG2_BITS_PER_WORD;
         let map_height = height + 2 * BitPackedGrid::PADDING;
@@ -113,23 +113,18 @@ impl BitPackedGrid {
     }
 
     /// Get the neighbors of a given cell
-    pub fn adjacent(&self, x: usize, y: usize, diagonal: bool) -> impl Iterator<Item = (usize, usize)> {
-        let mut neighbors = vec![
-            (x.wrapping_add(1), y),
-            (x, y.wrapping_add(1)),
-            (x.wrapping_sub(1), y),
-            (x, y.wrapping_sub(1)),
-        ];
-        if diagonal {
-            neighbors.extend(vec![
-                (x.wrapping_add(1), y.wrapping_add(1)),
-                (x.wrapping_sub(1), y.wrapping_add(1)),
-                (x.wrapping_add(1), y.wrapping_sub(1)),
-                (x.wrapping_sub(1), y.wrapping_sub(1)),
-            ]);
+    pub fn adjacent(&self, x: usize, y: usize, diagonal: bool) -> impl Iterator<Item = (usize, usize)> + '_ {
+        neighbors(x, y, diagonal).filter(move |(x, y)| self.get_bit_value(*x, *y))
+    }
+
+    pub fn grid_section(&self, x: usize, y: usize, width: usize, height: usize) -> Vec<Vec<f32>> {
+        let mut grid = vec![vec![0.0; width]; height];
+        for i in x..(x+width) {
+            for j in y..(y+height) {
+                grid[i-x][j-y] = self.get_bit_value(i, j) as u8 as f32;
+            }
         }
-        neighbors.retain(|(x, y)| self.get_bit_value(*x, *y));
-        neighbors.into_iter()
+        grid
     }
 }
 

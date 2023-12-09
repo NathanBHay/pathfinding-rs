@@ -18,7 +18,11 @@ use plotters::{prelude::*, style::Color};
 /// ## Complexity
 /// (n) where n is the number of cells in the grid map, assuming initialize 
 /// and add_obstacle are O(1)
-pub(crate) fn create_map_from_string<F, D, I>(s: String, mut initialize: I, mut add_obstacle: F) -> D
+pub(crate) fn create_map_from_string<F, D, I>(
+    s: String, 
+    mut initialize: I, 
+    mut add_obstacle: F
+) -> D
 where
     I: FnMut(usize, usize) -> D,
     F: FnMut(&mut D, usize, usize) -> (), 
@@ -125,4 +129,28 @@ pub(crate) fn plot_cells(
             .map(|(x, y, color)| Rectangle::new([(x, y), (x, y)], &BLUE.mix(color)));
         chart.draw_series(heatmap).unwrap();
     }
+}
+
+/// Helper function to get a iterator of the neighbors of a cell
+pub(crate) fn neighbors(
+    x: usize, 
+    y: usize, 
+    diagonal: bool
+) -> impl Iterator<Item = (usize, usize)>
+{
+    let mut neighbors = vec![
+        (x.wrapping_add(1), y), 
+        (x, y.wrapping_add(1)), 
+        (x.wrapping_sub(1), y), 
+        (x, y.wrapping_sub(1))
+    ];
+    if diagonal {
+        neighbors.extend(vec![
+            (x.wrapping_add(1), y.wrapping_add(1)),
+            (x.wrapping_sub(1), y.wrapping_add(1)),
+            (x.wrapping_add(1), y.wrapping_sub(1)),
+            (x.wrapping_sub(1), y.wrapping_sub(1)),
+        ]);
+    }
+    neighbors.into_iter()
 }

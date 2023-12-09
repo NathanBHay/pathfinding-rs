@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::{create_map_from_string, print_cells, plot_cells};
+use super::{create_map_from_string, print_cells, plot_cells, neighbors};
 use rand;
 
 /// A grid map that has a grid which has precalculated probabilities of a cell 
@@ -38,10 +38,9 @@ impl SamplingGrid {
 
     /// Creates a sampling grid from a string
     pub fn create_from_string(map: String) -> SamplingGrid {
-        let mut grid = create_map_from_string(map, SamplingGrid::new_with_size, |grid, x, y| {
+        create_map_from_string(map, SamplingGrid::new_with_size, |grid, x, y| {
             grid.sample_grid[x][y] = 1.0;
-        });
-        grid
+        })
     }
 
     /// Creates a sampling grid from a file
@@ -118,23 +117,8 @@ impl SamplingGrid {
     }
 
     /// Returns the neighbors of a cell
-    pub fn adjacent(&mut self, x: usize, y: usize, diagonal: bool) -> impl Iterator<Item = (usize, usize)> {
-        let mut neighbors = vec![
-            (x.wrapping_add(1), y), 
-            (x, y.wrapping_add(1)), 
-            (x.wrapping_sub(1), y), 
-            (x, y.wrapping_sub(1))
-        ];
-        if diagonal {
-            neighbors.extend(vec![
-                (x.wrapping_add(1), y.wrapping_add(1)),
-                (x.wrapping_sub(1), y.wrapping_add(1)),
-                (x.wrapping_add(1), y.wrapping_sub(1)),
-                (x.wrapping_sub(1), y.wrapping_sub(1)),
-            ]);
-        }
-        neighbors.retain(|(x, y)| self.valid_check(*x, *y));
-        neighbors.into_iter()
+    pub fn adjacent(&mut self, x: usize, y: usize, diagonal: bool) -> impl Iterator<Item = (usize, usize)> + '_ {
+        neighbors(x, y, diagonal).filter(move |(x, y)| self.valid_check(*x, *y))
     }
 
     /// Prints the grid map where . is a free cell and @ is an obstacle

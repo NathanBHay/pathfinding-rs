@@ -4,7 +4,7 @@
 
 use std::{collections::{HashSet, HashMap}, fs::read_to_string};
 
-use super::{create_map_from_string, print_cells, plot_cells};
+use super::{create_map_from_string, print_cells, plot_cells, neighbors};
 
 /// A grid map whoch uses a hashset of obstacles to represent obstacles
 /// This is the simplest grid map implementation
@@ -134,23 +134,9 @@ impl HashedGrid {
     /// * `y` - The y coordinate of the obstacle
     /// ## Returns
     /// A vector of coordinates that are neighbors of the given coordinate
-    pub fn adjacent(&self, x: usize, y: usize, diagonal: bool) -> impl Iterator<Item = (usize, usize)> {
-        let mut neighbors = vec![
-            (x.wrapping_add(1), y), 
-            (x, y.wrapping_add(1)), 
-            (x.wrapping_sub(1), y), 
-            (x, y.wrapping_sub(1))
-        ];
-        if diagonal {
-            neighbors.extend(vec![
-                (x.wrapping_add(1), y.wrapping_add(1)),
-                (x.wrapping_sub(1), y.wrapping_add(1)),
-                (x.wrapping_add(1), y.wrapping_sub(1)),
-                (x.wrapping_sub(1), y.wrapping_sub(1)),
-            ]);
-        }
-        neighbors.retain(|(x, y)| self.valid_map_value(*x, *y));
-        neighbors.into_iter()
+    pub fn adjacent(&self, x: usize, y: usize, diagonal: bool) -> impl Iterator<Item = (usize, usize)> + '_ {
+        neighbors(x, y, diagonal)
+            .filter(move |(x, y)| self.valid_map_value(*x, *y))
     }
 
     /// Prints the grid map where . is a free cell and @ is an obstacle
