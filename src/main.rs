@@ -5,19 +5,11 @@ mod search;
 mod util;
 pub mod fov;
 
-use std::{collections::{BinaryHeap, HashMap}, time::Instant};
-
-use domains::bitpackedgrid::BitPackedGrid;
-use search::uninformed::bfs;
-
-use crate::domains::samplinggrid::SamplingGrid;
-// use crate::search::astar::a_star;
-
 fn main() {
 
-    let grid = BitPackedGrid::create_from_file("count.map");
-    let result = compute_visibility_from_corner(grid, 0, 0, 4);
-    println!("{:?}", result);
+    // let grid = BitPackedGrid::create_from_file("count.map");
+    // let result = compute_visibility_from_corner(grid, 0, 0, 4);
+    // println!("{:?}", result);
     
     // grid.plot_cells("samplingrid1.png", None);
     // grid.plot_cells("samplingrid2.png", None);q
