@@ -2,12 +2,10 @@
 //! These algorithms include:
 //! * Breadth-First Search
 //! * Depth-First Search
-//! * Dijkstra's Algorithm
 
-use std::{collections::{HashMap, VecDeque}, hash::Hash, ops::Add};
+use std::{collections::{HashMap, VecDeque}, hash::Hash};
 
 use super::reconstruct_path;
-// use crate::search::astar::a_star;
 
 pub fn bfs<E, I, N, G>(mut expander: E, start: N, goal: G) -> Option<(Vec<N>, usize)>
 where
@@ -36,20 +34,32 @@ where
     None
 }
 
-// pub fn dijkstra<H, C, E, I, N, G>(
-//     expander: E,
-//     start: N, 
-//     goal: G
-// ) -> Option<(Vec<N>, C)>
-// where
-//     C: Ord + Default + Clone + Add<Output = C>,
-//     E: Fn(&N) -> I,
-//     I: IntoIterator<Item = (N, C)>,
-//     N: Hash + Eq + Clone,
-//     G: Fn(&N) -> bool,
-// {
-//     a_star(|_| C::default(), expander, start, goal)
-// }
+pub fn dfs<E, I, N, G>(mut expander: E, start: N, goal: G) -> Option<(Vec<N>, usize)>
+where
+    E: FnMut(&N) -> I,
+    I: IntoIterator<Item = N>,
+    N: Hash + Eq + Clone,
+    G: Fn(&N) -> bool,
+{
+    let mut stack = Vec::new();
+    let mut distance = HashMap::new();
+    distance.insert(start.clone(), None);
+    stack.push(start);
+    while let Some(node) = stack.pop() {
+        if goal(&node) {
+            let path = reconstruct_path(distance, node);
+            let length = path.len() - 1;
+            return Some((path, length));
+        }
+        for child in expander(&node) {
+            if !distance.contains_key(&child) {
+                distance.insert(child.clone(), Some(node.clone()));
+                stack.push(child);
+            }
+        }
+    }
+    None
+}
 
 #[cfg(test)]
 mod tests {

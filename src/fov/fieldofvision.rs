@@ -1,5 +1,7 @@
-//! These are approaches to field of vision algorithms.
-//! 
+//! These are RPG approaches to field of vision algorithms. These algorithms include:
+//! * Raycasting
+//! * Recursive Shadowcasting
+//! These implementations are generally based upon code from RogueBasin.
 
 use std::{collections::{HashSet, HashMap}, vec};
 
@@ -127,6 +129,7 @@ fn lightcast(
     }
 }
 
+#[cfg(test)]
 mod tests {
     
     use super::{raycasting, shadowcasting};

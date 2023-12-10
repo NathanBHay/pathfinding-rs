@@ -1,3 +1,4 @@
+//! # Bit-Packed Grid Maps
 //! A grid map representation that uses bitpacking to store the map.
 //! This is the fastest grid map implementation, as it uses bit manipulations
 //! to change the map while also being the smallest as it compresses the map
@@ -6,11 +7,12 @@
 //! are additionally padded with 2 rows and columns to avoid travelling out of 
 //! bounds.
 //! 
-//! TODO: Fix this as it currently breaks on maps
+//! This implementation is based upon Warthog's implementation of bitpacked grid
+//! maps, which can be found: https://bitbucket.org/dharabor/pathfinding/
 
 use std::vec;
 
-use super::{create_map_from_string, print_cells, neighbors};
+use super::{create_map_from_string, print_cells, neighbors, plot_cells};
 
 /// A grid of bits packed into usize-bit words
 #[derive(Debug)]
@@ -130,6 +132,12 @@ impl BitPackedGrid {
             }
         }
         grid
+    }
+
+    pub fn plot_cells(&self, filename: &str, path: Option<Vec<(usize, usize)>>) {
+        plot_cells(self.original_width, self.original_height, filename, |x, y| {
+            self.get_bit_value(x, y)
+        }, path, None)
     }
 }
 

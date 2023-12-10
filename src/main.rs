@@ -1,19 +1,26 @@
+use domains::bitpackedgrid::BitPackedGrid;
+use search::astar::astar;
+
 mod domains;
 mod heuristics;
-mod mapf;
 mod search;
 mod util;
-pub mod fov;
+mod fov;
 
 fn main() {
 
-    // let grid = BitPackedGrid::create_from_file("count.map");
-    // let result = compute_visibility_from_corner(grid, 0, 0, 4);
+    let grid = BitPackedGrid::create_from_file("basic.map");
+    let path = astar(
+        |(x, y)| grid.adjacent(x.clone(), y.clone(), false).map(|(x, y)| ((x, y), 1)), 
+        (0, 0),
+        |(x, y)| *x == 9 && *y == 9,
+        |_| 0, 
+    ).map(|(path, _)| path);
     // println!("{:?}", result);
     
     // grid.plot_cells("samplingrid1.png", None);
     // grid.plot_cells("samplingrid2.png", None);q
-    // grid.plot_cells("samplingrid.png", path.clone());
+    grid.plot_cells("new.png", path.clone());
     // println!("{}", grid.print_cells());
     // print!("{}", grid.print_cells_with_path(path));
 }

@@ -9,8 +9,7 @@
 //! Source for codes: https://www.roguebasin.com/index.php/Digital_lines
 
 
-/// Basic line drawing algorithm
-/// This is pretty awful, but it works
+/// Basic line drawing algorithm, inefficient but simple.
 pub fn basic_line(
     (x0, y0): (usize, usize), 
     (x1, y1): (usize, usize)

@@ -1,3 +1,10 @@
+//! # Domains
+//! Domains that can be used with search algorithms. These domains include:
+//! * BitPackedGrid, a grid map that uses 1 bit per cell
+//! * HashedGrid, a grid map that uses a hash map to store the map
+//! * AdjacencyList, a graph representation of a map
+//! * SamplingGrid, a grid map that uses sampling to approximate map error
+
 #![allow(dead_code)]
 pub mod adjacencylist;
 pub mod hashedgrid;

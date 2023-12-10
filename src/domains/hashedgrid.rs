@@ -1,3 +1,4 @@
+//! # Hashed Grid Maps
 //! A grid implementation which uses a hashset to represent obstacles
 //! This is the simplest grid implementation and is fairly slow due
 //! to the possibility of hashing collisions.

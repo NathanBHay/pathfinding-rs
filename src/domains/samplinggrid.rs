@@ -1,10 +1,16 @@
+//! # Sampling Grid Map
+//! A grid map that has a grid which has precalculated probabilities of a cell
+//! being traverseable, [0, 1] where 0 is an obstacle and 1 is free. This allows
+//! for sampling of the cells to be done to determine if a cell is free or not.
+//! Once sampled the cell is marked as to avoid repeated sampling.
+
 use std::collections::HashMap;
 
 use super::{create_map_from_string, print_cells, plot_cells, neighbors};
 use rand;
 
 /// A grid map that has a grid which has precalculated probabilities of a cell 
-/// being free. This allows for sampling of 
+/// being free
 pub struct SamplingGrid {
     pub sample_grid: Vec<Vec<f32>>,
     pub gridmap: HashMap<usize, bool>, // Represents a cell that has been sampled
