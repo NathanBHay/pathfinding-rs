@@ -87,6 +87,11 @@ impl BitPackedGrid {
         (self.map_cells[word_index as usize] & mask) != 0
     }
 
+    /// Check if a given x, y coordinate is within the bounds of the map
+    pub fn bounds_check(&self, x: usize, y: usize) -> bool {
+        x < self.original_width && y < self.original_height
+    }
+
     /// Convert x, y to map id
     /// ## Arguments
     /// * `x` - The x coordinate of the cell [0, original width)

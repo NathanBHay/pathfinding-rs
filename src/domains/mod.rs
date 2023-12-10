@@ -54,10 +54,10 @@ where
 /// true if the cell is free and false if it is an obstacle
 /// ## Returns
 /// A string representing the map where . is a free cell and @ is an obstacle
-pub(crate) fn print_cells<F: Fn(usize, usize) -> bool>(
+pub(crate) fn print_cells(
     width: usize, 
     height: usize, 
-    get_cell_value: F, 
+    get_cell_value: impl Fn(usize, usize) -> bool, 
     path: Option<Vec<(usize, usize)>>
 ) -> String {
     let mut s = String::new();
@@ -77,6 +77,22 @@ pub(crate) fn print_cells<F: Fn(usize, usize) -> bool>(
         }
     }
     s
+}
+
+/// A debuging function which prints a vector of points
+pub fn print_points(
+    cells: Vec<(usize, usize)>
+) -> String {
+    let width_max = cells.iter().map(|(x, _)| x).max().unwrap() + 1;
+    let width_min = cells.iter().map(|(x, _)| x).min().unwrap();
+    let height_max = cells.iter().map(|(_, y)| y).max().unwrap() + 1;
+    let height_min = cells.iter().map(|(_, y)| y).min().unwrap();
+    print_cells(
+        width_max - width_min, 
+        height_max - height_min, 
+        |x, y| cells.contains(&(x + width_min, y + height_min)), 
+        None
+    )
 }
 
 /// Helper function to plot the cells on a plotter backend
