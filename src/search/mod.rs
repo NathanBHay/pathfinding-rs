@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::{collections::HashMap, hash::Hash, ops::Add};
+use std::{collections::HashMap, hash::Hash, ops::Add, cmp::Ordering};
 
 pub mod uninformed;
 pub mod astar;
@@ -48,4 +48,23 @@ where
     }
     path.reverse();
     (path, cost)
+}
+
+/// Search node used in A-Star/D-Star Binary Heap
+#[derive(Clone, Eq, PartialEq, Debug)]
+pub(crate) struct SearchNodeState<N: Eq, C: Ord> {
+    node: N,
+    cost: C,
+}
+
+impl<N: Eq, C: Ord> Ord for SearchNodeState<N, C> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.cost.cmp(&other.cost).reverse()
+    }
+}
+
+impl<N: Eq, C: Ord> PartialOrd for SearchNodeState<N, C> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }

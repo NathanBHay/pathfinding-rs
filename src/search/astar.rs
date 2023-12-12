@@ -1,38 +1,13 @@
 // //! An A-Star Implementation with drop-in heuristic, expander, and domain.
 // //! The implementation is similar to the approach used by 
 
-use std::{cmp::Ordering, hash::Hash, collections::{HashMap, BinaryHeap}, ops::Add, fmt::Debug};
-use super::reconstruct_path_with_cost;
+use std::{hash::Hash, collections::{HashMap, BinaryHeap, HashSet}, ops::Add};
+use super::{reconstruct_path_with_cost, SearchNodeState};
 
-/// Search node used in A-Star Binary Heap
-#[derive(Clone, Eq, PartialEq, Debug)]
-struct SearchNodeState<N: Eq, C: Ord> {
-    node: N,
-    cost: C,
-}
 
-impl<N: Eq, C: Ord> Ord for SearchNodeState<N, C> {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.cost.cmp(&other.cost).reverse()
-    }
-}
 
-impl<N: Eq, C: Ord> PartialOrd for SearchNodeState<N, C> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-/// A-Star Search
-/// ## Arguments
-/// * `expander` - A function that returns an iterator over the nodes adjacent to a given node
-/// * `start` - The start node
-/// * `goal` - A function that returns whether or not a given node is the goal
-/// * `heuristic` - A function that returns the heuristic value of a given node
-/// ## Returns
-/// An optional vector of nodes from the start to the goal
 pub fn astar<E, I, C, N, G, H>(
-    mut expander: E,
+    expander: E,
     start: N, 
     goal: G,
     heuristic: H, 
@@ -45,14 +20,43 @@ where
     G: Fn(&N) -> bool,
     H: Fn(&N) -> C,
 {
+    astar_with_expanded_set(expander, start, goal, None, heuristic)
+}
+
+/// A-Star Search
+/// ## Arguments
+/// * `expander` - A function that returns an iterator over the nodes adjacent to a given node
+/// * `start` - The start node
+/// * `goal` - A function that returns whether or not a given node is the goal
+/// * `heuristic` - A function that returns the heuristic value of a given node
+/// ## Returns
+/// An optional vector of nodes from the start to the goal
+pub fn astar_with_expanded_set<E, I, C, N, G, H>(
+    mut expander: E,
+    start: N, 
+    goal: G,
+    mut expanded_nodes: Option<&mut HashSet<N>>,
+    heuristic: H, 
+) -> Option<(Vec<N>, C)>
+where
+    E: FnMut(&N) -> I,
+    I: IntoIterator<Item = (N, C)>,
+    C: Ord + Default + Clone + Add<Output = C>,
+    N: Hash + Clone + Eq,
+    G: Fn(&N) -> bool,
+    H: Fn(&N) -> C,
+{
     let mut open = BinaryHeap::new();
-    let mut previous: HashMap<N, (Option<N>, C)> = HashMap::new();
+    let mut previous = HashMap::new();
     previous.insert(start.clone(), (None, C::default()));
     open.push(SearchNodeState {
         node: start.clone(),
         cost: heuristic(&start),
     });
     while let Some(SearchNodeState { node, .. }) = open.pop() {
+        if let Some(expanded_nodes) = expanded_nodes.as_mut() {
+            expanded_nodes.insert(node.clone());
+        }
         if goal(&node) {
             return Some(reconstruct_path_with_cost(previous, node));
         }

@@ -3,7 +3,7 @@
 //! * Recursive Shadowcasting
 //! These implementations are generally based upon code from RogueBasin.
 
-use std::{collections::{HashSet, HashMap}, vec};
+use std::collections::HashMap;
 
 use super::linedrawing::bresenham;
 
@@ -11,32 +11,45 @@ use super::linedrawing::bresenham;
 pub fn raycasting(
     (x, y): (usize, usize),
     radius: usize,
-    visibility_check: impl Fn(usize, usize) -> bool,
+    visibility_check: impl FnMut(usize, usize) -> bool,
 ) -> Vec<(usize, usize)> {
-    let mut visible = HashSet::new();
+    raycasting_with_dist((x, y), radius, visibility_check, |_| 1)
+        .iter()
+        .map(|(p, _)| *p)
+        .collect::<Vec<_>>()
+}
+
+pub fn raycasting_with_dist(
+    (x, y): (usize, usize),
+    radius: usize,
+    mut visibility_check: impl FnMut(usize, usize) -> bool,
+    visibility_func: impl Fn(usize) -> usize,
+) -> Vec<((usize, usize), usize)> {
+    let mut visible = HashMap::new();
+    let visibility_kernal = (0..=radius).map(visibility_func).collect::<Vec<_>>();
     for i in 0..2*radius {
         visible.extend(bresenham(
             (x, y), 
             (x.saturating_sub(radius).saturating_add(i), y.saturating_sub(radius)), 
-            &visibility_check
-        ));
+            &mut visibility_check
+        ).iter().zip(visibility_kernal.iter()));
         visible.extend(bresenham(
             (x, y), 
             (x.saturating_add(radius), y.saturating_sub(radius).saturating_add(i)), 
-            &visibility_check)
+            &mut visibility_check).iter().zip(visibility_kernal.iter())
         );
         visible.extend(bresenham(
             (x, y), 
             (x.saturating_add(radius).saturating_sub(i) , y.saturating_add(radius)), 
-            &visibility_check)
+            &mut visibility_check).iter().zip(visibility_kernal.iter())
         );
         visible.extend(bresenham(
             (x, y), 
             (x.saturating_sub(radius) , y.saturating_add(radius).saturating_sub(i)), 
-            &visibility_check)
+            &mut visibility_check).iter().zip(visibility_kernal.iter())
         );
     }
-    visible.into_iter().collect() // Maybe return an iterator instead?
+    visible.into_iter().collect::<Vec<_>>()
 }
 
 /// Shadowcasting implementation for field of view
@@ -148,5 +161,14 @@ mod tests {
         assert_eq!(visibility_all.len(), 25);
         let visibility_top_obstacle = shadowcasting((10, 10), 2, |_, _| true, |x, y| (x,y) != (10, 9));
         assert_eq!(visibility_top_obstacle.len(), 24);
+    }
+
+    #[test]
+    fn test_raycasting_with_func() {
+        let visibility_all: usize = super::raycasting_with_dist((10, 10), 1, |_, _| true, |x| x)
+            .iter()
+            .map(|(_, c)| c)
+            .sum();
+        assert_eq!(visibility_all, 8);
     }
 }

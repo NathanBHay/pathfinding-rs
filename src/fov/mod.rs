@@ -4,5 +4,5 @@
 
 #![allow(dead_code)]
 pub mod pathcounting;
-mod linedrawing;
+pub mod linedrawing;
 pub mod fieldofvision;

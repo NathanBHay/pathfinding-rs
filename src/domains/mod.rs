@@ -11,8 +11,6 @@ pub mod hashedgrid;
 pub mod bitpackedgrid;
 pub mod samplinggrid;
 
-use std::collections::HashMap;
-
 use plotters::{prelude::*, style::Color};
 /// A helper function that creates a map from a string given functions
 /// to initialize the map and add obstacles
@@ -117,7 +115,7 @@ pub(crate) fn plot_cells(
     output_file: &str, 
     get_cell_value: impl Fn(usize, usize) -> bool,
     path: Option<Vec<(usize, usize)>>,
-    heatmap: Option<HashMap<(usize, usize), f64>>,
+    heatmap: Option<Vec<((usize, usize), f64)>>,
 ) {
     let root = BitMapBackend::new(output_file, (width as u32, height as u32)).into_drawing_area();
     root.fill(&WHITE).unwrap();
@@ -127,13 +125,22 @@ pub(crate) fn plot_cells(
         .unwrap();
     chart.configure_mesh().disable_mesh().draw().unwrap();
 
-    // Draw obstacles, will draw a rectangle for each cell that is an obstacle
+    // Draw obstacles, will draw a rectangle for each cell that is an obstacle (is)
     let series = (0..width)
         .flat_map(|x| (0..height).map(move |y| (x, y)))
         .filter(|(x, y)| !get_cell_value(x.clone(), y.clone()))
         .map(|(x, y)| (x as i32, (height-y) as i32))
-        .map(|(x, y)| Rectangle::new([(x, y), (x + 1, y + 1)], &BLACK));
+        .map(|(x, y)| Rectangle::new([(x, y), (x, y)], &BLACK));
     chart.draw_series(series).expect("Unable to draw obstacles");
+    
+    // Draw Heatmap of paths of values
+    if let Some(heatmap) = heatmap {
+        let heatmap = heatmap
+            .iter()
+            .map(|((x, y), color)| (*x as i32, (height - *y) as i32, *color))
+            .map(|(x, y, color)| Rectangle::new([(x, y), (x, y)], &BLUE.mix(color)));
+        chart.draw_series(heatmap).unwrap();
+    }
 
     // Draw path
     if let Some(path) = path {
@@ -142,15 +149,6 @@ pub(crate) fn plot_cells(
             .map(|(x, y)| (*x as i32, (height - *y) as i32))
             .map(|(x, y)| Rectangle::new([(x, y), (x, y)], &RED));
         chart.draw_series(path).unwrap();
-    }
-
-    // Draw Heatmap of paths of values
-    if let Some(heatmap) = heatmap {
-        let heatmap = heatmap
-            .iter()
-            .map(|((x, y), color)| (*x as i32, (height - *y) as i32, *color))
-            .map(|(x, y, color)| Rectangle::new([(x, y), (x, y)], &BLUE.mix(color)));
-        chart.draw_series(heatmap).unwrap();
     }
 }
 

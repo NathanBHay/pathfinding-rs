@@ -55,25 +55,53 @@ impl SamplingGrid {
         SamplingGrid::create_from_string(s)
     }
 
+    pub fn init_gridmap(&mut self) {
+        self.gridmap.drain();
+        for x in 0..self.width {
+            for y in 0..self.height {
+                if self.sample_grid[x][y] == 0.0 {
+                    self.gridmap.insert(x * self.height + y, true);
+                }
+            }
+        }
+    }
+
+    ///
+    pub fn get_sample_grid_value(&self, x: usize, y: usize) -> usize {
+        ((1.0 - self.sample_grid[x][y]) * 10.0) as usize
+    }
+
     /// Returns whether a cell is an obstacle, true if not, otherwise false
     pub fn get_grid_value(&self, x: usize, y: usize) -> Option<bool> {
         self.gridmap.get(&(x * self.height + y)).map(|x| !x)
     }
 
     /// Sets a cell to be either an obstacle (false) or free (true)
-    pub fn set_grid_value(&mut self, x: usize, y: usize, value: bool) {
+    pub fn set_grid_value(&mut self, x: usize, y: usize, value: bool) -> bool {
         self.gridmap.insert(x * self.height + y, value);
+        value
+    }
+
+    /// Checks if the cell is already known, if not checks chance of sampling,
+    /// if it meets that it samples and uses that, if not it assumes that it
+    /// is passible
+    pub fn sample_with_chance(&mut self, x: usize, y: usize, chance: f32) -> bool {
+        if let Some(val) = self.get_grid_value(x, y) {
+            val
+        } else if rand::random::<f32>() < chance {
+            self.sample(x, y)
+        } else {
+            self.set_grid_value(x, y, true)
+        }
     }
 
     /// Samples a cell, checks if its been sampled before and if not, samples it
-    /// and then sets state
     pub fn sample(&mut self, x: usize, y: usize) -> bool {
         if let Some(value) = self.get_grid_value(x, y) {
             value
         } else {
             let value = self.sample_grid[x][y] != 0.0 && rand::random::<f32>() < self.sample_grid[x][y];
-            self.set_grid_value(x, y, value);
-            value
+            self.set_grid_value(x, y, value)
         }
     }
 
@@ -87,6 +115,7 @@ impl SamplingGrid {
     }
 
     pub fn conv_blur(&mut self, radius: usize) {
+        let mut new_grid = vec![vec![1.0; self.height]; self.width];
         let mut kernel = vec![vec![1.0; radius * 2 + 1]; radius * 2 + 1];
         for i in 0..radius * 2 + 1 {
             for j in 0..radius * 2 + 1 {
@@ -102,13 +131,14 @@ impl SamplingGrid {
                             let x = x.wrapping_sub(radius).wrapping_add(i);
                             let y = y.wrapping_sub(radius).wrapping_add(j);
                             if self.bound_check(x, y) {
-                                self.sample_grid[x][y] = (self.sample_grid[x][y] - kernel[i][j]).max(0.0);
+                                new_grid[x][y] = (new_grid[x][y] - kernel[i][j]).max(0.0);
                             }
                         }
                     }
                 }
             }
         }
+        self.sample_grid = new_grid;
     }
     
     /// Returns whether a cell is valid, sampling it if it is
@@ -123,8 +153,12 @@ impl SamplingGrid {
     }
 
     /// Returns the neighbors of a cell
-    pub fn adjacent(&mut self, x: usize, y: usize, diagonal: bool) -> impl Iterator<Item = (usize, usize)> + '_ {
+    pub fn adjacent_sample(&mut self, x: usize, y: usize, diagonal: bool) -> impl Iterator<Item = (usize, usize)> + '_ {
         neighbors(x, y, diagonal).filter(move |(x, y)| self.valid_check(*x, *y))
+    }
+
+    pub fn adjacent(&self, x: usize, y: usize, diagonal: bool) -> impl Iterator<Item = (usize, usize)> + '_ {
+        neighbors(x, y, diagonal).filter(move |(x, y)| self.bound_check(*x, *y) && self.get_grid_value(*x, *y).unwrap_or(true))
     }
 
     /// Prints the grid map where . is a free cell and @ is an obstacle
@@ -136,12 +170,12 @@ impl SamplingGrid {
         print_cells(self.width, self.height, |x, y| self.get_grid_value(x, y).is_some_and(|x| !x), path)
     }
 
-    pub fn plot_cells(&self, output_file: &str, path: Option<Vec<(usize, usize)>>) {
-        plot_cells(self.width, self.height, output_file, |x, y| self.get_grid_value(x, y).is_some_and(|x| !x), path, None)
+    pub fn plot_cells(&self, output_file: &str, path: Option<Vec<(usize, usize)>>, heatmap: Option<Vec<((usize, usize), f64)>>) {
+        plot_cells(self.width, self.height, output_file, |x, y| self.get_grid_value(x, y).is_some_and(|x| !x), path, heatmap)
     }
 
-    pub fn plot_cells_with_heatmap(&self, output_file: &str, heatmap: HashMap<(usize, usize), f64>) {
-        plot_cells(self.width, self.height, output_file, |x, y| self.get_grid_value(x, y).is_some_and(|x| !x), None, Some(heatmap))
+    pub fn plot_sampling_cells(&self, output_file: &str, path: Option<Vec<(usize, usize)>>, heatmap: Option<Vec<((usize, usize), f64)>>) {
+        plot_cells(self.width, self.height, output_file, |x, y| self.sample_grid[x][y] != 0.0, path, heatmap)
     }
 }
 
@@ -168,12 +202,14 @@ mod tests {
 
     #[test]
     fn test_sampling_grid_blur() {
-        let mut grid = SamplingGrid::create_from_string("...@...".to_string());
+        let mut grid = SamplingGrid::create_from_string("...@..@".to_string());
         grid.conv_blur(2);
         assert_eq!(grid.sample_grid[0][0], 1.0);
         assert_eq!(grid.sample_grid[1][0], 0.8);
         assert_eq!(grid.sample_grid[2][0], 0.5);
         assert_eq!(grid.sample_grid[3][0], 0.0);
+        assert_eq!(grid.sample_grid[4][0], 0.3);
+        assert_eq!(grid.sample_grid[5][0], 0.3);
     }
 
     #[test]

@@ -82,7 +82,7 @@ impl BitPackedGrid {
     }
 
     /// Get the value of a bit at a given x, y coordinate
-    fn get_bit_value(&self, x: usize, y: usize) -> bool {
+    pub fn get_bit_value(&self, x: usize, y: usize) -> bool {
         let map_id = self.get_map_id(x, y);
         let word_index = map_id >> BitPackedGrid::LOG2_BITS_PER_WORD;
         let mask = 1 << (map_id & BitPackedGrid::INDEX_MASK);
@@ -134,10 +134,10 @@ impl BitPackedGrid {
         grid
     }
 
-    pub fn plot_cells(&self, filename: &str, path: Option<Vec<(usize, usize)>>) {
+    pub fn plot_cells(&self, filename: &str, path: Option<Vec<(usize, usize)>>, heatmap: Option<Vec<((usize, usize), f64)>>) {
         plot_cells(self.original_width, self.original_height, filename, |x, y| {
             self.get_bit_value(x, y)
-        }, path, None)
+        }, path, heatmap)
     }
 }
 

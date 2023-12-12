@@ -40,7 +40,7 @@ pub fn basic_line(
 pub fn bresenham(
     (x0, y0): (usize, usize),
     (x1, y1): (usize, usize),
-    visibility_check: impl Fn(usize, usize) -> bool,
+    mut visibility_check: impl FnMut(usize, usize) -> bool,
 ) -> Vec<(usize, usize)> {
     let (mut x0, mut y0, mut x1, mut y1)
         = (x0 as isize, y0 as isize, x1 as isize, y1 as isize);

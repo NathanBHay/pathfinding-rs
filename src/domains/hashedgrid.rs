@@ -3,7 +3,7 @@
 //! This is the simplest grid implementation and is fairly slow due
 //! to the possibility of hashing collisions.
 
-use std::{collections::{HashSet, HashMap}, fs::read_to_string};
+use std::{collections::HashSet, fs::read_to_string};
 
 use super::{create_map_from_string, print_cells, plot_cells, neighbors};
 
@@ -154,7 +154,7 @@ impl HashedGrid {
         plot_cells(self.width, self.height, filename, |x, y| self.get_map_value(x, y), Some(path), None)
     }
 
-    pub fn plot_cells_with_heatmap(&self, filename: &str, heatmap: HashMap<(usize, usize), f64>) {
+    pub fn plot_cells_with_heatmap(&self, filename: &str, heatmap: Vec<((usize, usize), f64)>) {
         plot_cells(self.width, self.height, filename, |x, y| self.get_map_value(x, y), None, Some(heatmap))
     }
     
