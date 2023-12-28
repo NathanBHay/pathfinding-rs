@@ -1,4 +1,4 @@
-//! # Sampling Grid Map
+//! # Sampling Grid Map DEPRECATED
 //! A grid map that has a grid which has precalculated probabilities of a cell
 //! being traverseable, [0, 1] where 0 is an obstacle and 1 is free. This allows
 //! for sampling of the cells to be done to determine if a cell is free or not.
@@ -166,8 +166,12 @@ impl SamplingGrid {
         self.print_cells_with_path(None)
     }
 
+    pub fn print_sampling_cells(&self, path: Option<Vec<(usize, usize)>>) -> String {
+        print_cells(self.width, self.height, |x, y| self.sample_grid[x][y] != 0.0, path)
+    }
+
     pub fn print_cells_with_path(&self, path: Option<Vec<(usize, usize)>>) -> String {
-        print_cells(self.width, self.height, |x, y| self.get_grid_value(x, y).is_some_and(|x| !x), path)
+        print_cells(self.width, self.height, |x, y| self.get_grid_value(x, y).map(|x| !x).unwrap_or(true), path)
     }
 
     pub fn plot_cells(&self, output_file: &str, path: Option<Vec<(usize, usize)>>, heatmap: Option<Vec<((usize, usize), f64)>>) {
@@ -198,6 +202,15 @@ mod tests {
         assert_eq!(grid.sample_grid[2][0], 0.0);
         assert_eq!(grid.sample_grid[0][1], 1.0);
         assert_eq!(grid.sample_grid[2][1], 1.0);
+    }
+
+    #[test]
+    fn test_sample() {
+        let mut grid = SamplingGrid::create_from_string("..@\n.@.\n".to_string());
+        assert_eq!(grid.sample(0, 0), true);
+        assert_eq!(grid.sample(2, 0), false);
+        assert_eq!(grid.sample(0, 1), true);
+        assert_eq!(grid.sample(2, 1), true);
     }
 
     #[test]

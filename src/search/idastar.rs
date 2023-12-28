@@ -1,8 +1,15 @@
+//! THIS CODE IS DEPRECATED AND WILL BE REMOVED
+//! AS IT DOESN'T WORK
+
 use std::{hash::Hash, collections::HashMap};
 
-use super::reconstruct_path;
 
-pub fn ida_star<E, I, N, G, H>(mut expander: E, start: N, goal: G, heuristic: H) -> Option<(Vec<N>, usize)>
+pub fn ida_star<E, I, N, G, H>(
+    mut expander: E, 
+    start: N, 
+    goal: G, 
+    heuristic: H
+) -> Option<(Vec<N>, usize)>
 where
     E: FnMut(&N) -> I,
     I: IntoIterator<Item = N>,

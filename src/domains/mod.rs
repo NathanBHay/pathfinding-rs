@@ -9,7 +9,8 @@
 pub mod adjacencylist;
 pub mod hashedgrid;
 pub mod bitpackedgrid;
-pub mod samplinggrid;
+pub mod samplinggrid_depr;
+pub mod samplegrid;
 
 use plotters::{prelude::*, style::Color};
 /// A helper function that creates a map from a string given functions
@@ -160,9 +161,9 @@ pub(crate) fn neighbors(
 ) -> impl Iterator<Item = (usize, usize)>
 {
     let mut neighbors = vec![
-        (x.wrapping_add(1), y), 
-        (x, y.wrapping_add(1)), 
-        (x.wrapping_sub(1), y), 
+        (x.wrapping_add(1), y), // These are wrapping as avoid branching 
+        (x, y.wrapping_add(1)), // on bitpacked grids. This means bound
+        (x.wrapping_sub(1), y), // checks or padding is required.
         (x, y.wrapping_sub(1))
     ];
     if diagonal {

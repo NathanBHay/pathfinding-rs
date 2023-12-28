@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use domains::samplinggrid::SamplingGrid;
+use domains::samplinggrid_depr::SamplingGrid;
 use heuristics::distance::manhattan_distance;
 use search::astar::astar;
 
@@ -9,15 +9,19 @@ mod heuristics;
 mod search;
 mod util;
 mod fov;
-mod expansionpolicies;
+mod gridpolicies;
 
 fn main() {
-    let mut grid = SamplingGrid::create_from_file("wall.map");
+    let mut grid = SamplingGrid::create_from_file("wall2.map");
     grid.init_gridmap();
-    grid.conv_blur(2); // Blur
-    let mut current_node = (3, 0); // (225, 225);
+    // grid.conv_blur(2); // Blur
+    // grid.sample_grid[]
+    // println!("{:?}", grid.sample_grid[18][28]);
+    // grid.sample_grid[18][27] = 0.05;
+    grid.sample_grid[5][7] = 0.00005;
+    let mut current_node = (5, 4); // (19, 9) (225, 225);
     let mut final_path = Vec::new();
-    let goal = (3, 6); //(70, 40); // [3][0] -> [3][6]
+    let goal = (5, 9); //(70, 40); // 19, 35
     let epoch = 10;
     let mut iteration = 0;
     while current_node != goal {
@@ -52,12 +56,14 @@ fn main() {
             .unwrap_or(current_node);
         let heatmap = heatmap.into_iter().map(|(k, v)| (k, v / epoch as f64)).collect::<Vec<_>>();
         // grid.plot_sampling_cells(format!("{}.png", iteration).as_str(), None, Some(heatmap));
-        println!("Iteration: {}", iteration);
-        println!("Iteration: {:?}", heatmap);
+        // println!("Iteration: {}", iteration);
+        // println!("Iteration: {:?}", heatmap);
+        println!("{}", grid.print_sampling_cells(Some(heatmap.into_iter().map(|(k, v)| k).collect::<Vec<_>>())));
         iteration += 1;
     }
     grid.init_gridmap();
-    grid.plot_cells("0final.png", Some(final_path), None)
+    // grid.plot_cells("0final.png", Some(final_path), None)
+    grid.print_cells_with_path(Some(final_path));
 }
 
 /*
@@ -77,6 +83,13 @@ mod tests {
     use crate::{domains::bitpackedgrid::BitPackedGrid, search::astar::astar_with_expanded_set};
 
     use super::*;
+
+    #[test]
+    fn run_test() {
+        let x = None;
+        let y = Some(2);
+        println!("{:?}", y.min(x));
+    }
 
     #[test]
     fn run_basic_search() {

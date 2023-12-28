@@ -70,7 +70,7 @@ impl BitPackedGrid {
     }
 
     /// Set the value if a but at a given x, y coordinate to be true or false
-    fn set_bit_value(&mut self, x: usize, y: usize, value: bool) {
+    pub fn set_bit_value(&mut self, x: usize, y: usize, value: bool) {
         let map_id = self.get_map_id(x, y);
         let word_index = map_id >> BitPackedGrid::LOG2_BITS_PER_WORD;
         let mask = 1 << (map_id & BitPackedGrid::INDEX_MASK);

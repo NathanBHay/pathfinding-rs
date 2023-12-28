@@ -1,5 +1,5 @@
 use crate::domains::bitpackedgrid::BitPackedGrid;
-use crate::domains::samplinggrid::SamplingGrid;
+use crate::domains::samplinggrid_depr::SamplingGrid;
 use crate::fov::fieldofvision::{raycasting_with_dist, raycasting};
 use crate::fov::linedrawing::bresenham;
 use crate::heuristics::distance::manhattan_distance;
