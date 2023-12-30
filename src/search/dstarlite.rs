@@ -118,7 +118,7 @@ impl<E, I, N, C, H, M, J> DStarLite<E, I, N, C, H, M, J> where
 
     /// Calculate the key for a vertex
     fn calculate_key(&self, node: &N) -> Option<(C, C)> {
-        let min: RevSome<&C> = RevSome(self.g_score.get(node)).min(RevSome(self.rhs.get(node)));
+        let min = std::cmp::min(RevSome(self.g_score.get(node)), RevSome(self.rhs.get(node)));
         match min.0 {
             Some(min) => Some((
                 min.clone() + (self.heuristic)(&self.start, &node) + self.k_m.clone(), 
@@ -162,9 +162,11 @@ impl<E, I, N, C, H, M, J> DStarLite<E, I, N, C, H, M, J> where
                 for (child, cost) in (self.expander)(&node) {
                     if child != self.goal {
                         self.rhs.insert(
-                            child.clone(), 
-                            RevSome(self.rhs.get(&child))
-                                .min(RevSome(self.g_score.get(&child).map(|x| x.clone() + cost).as_ref())).0.unwrap().clone()
+                            child.clone(),
+                            std::cmp::min(
+                                RevSome(self.rhs.get(&child)), 
+                                RevSome(self.g_score.get(&child).map(|x| x.clone() + cost).as_ref())
+                            ).0.unwrap().clone()
                         );
                     }
                     self.update_vertex(child);

@@ -2,10 +2,16 @@ use super::bitpackedgrid::BitPackedGrid;
 use super::{create_map_from_string, plot_cells, print_cells};
 
 pub struct SampleGrid {
-    /// The sampling grid which is accessed by [x][y]
+    /// The sampling grid which determines the probability of a cell being occupied.
+    /// It has a value between 0.0 and 1.0
     pub sample_grid: Vec<Vec<f32>>,
-    /// The bitpacked grid which is accessed by [x][y]
+
+    /// The bitpacked grid which represents sampled cells
+    /// TODO: This cam be simplified to a smaller sub grid
     pub gridmap: BitPackedGrid,
+
+    /// The real values of the grid
+    pub ground_truth: BitPackedGrid,
 
     // The width and height of the grid
     // can be removed for reduced space
@@ -15,13 +21,14 @@ pub struct SampleGrid {
 
 impl SampleGrid {
 
-    /// Creates a new sampling grid from a sampling grid
-    pub fn new_from_grid(grid: Vec<Vec<f32>>) -> SampleGrid {
+    /// Creates a new sampling grid from a sampling grid and a ground truth grid
+    pub fn new_from_grid(grid: Vec<Vec<f32>>, ground_truth: BitPackedGrid) -> SampleGrid {
         let width = grid.len();
         let height = grid[0].len();
         let mut grid = SampleGrid {
             sample_grid: grid,
             gridmap: BitPackedGrid::new(width, height),
+            ground_truth,
             width,
             height,
         };
@@ -34,6 +41,7 @@ impl SampleGrid {
         SampleGrid {
             sample_grid: vec![vec![0.0; height]; width],
             gridmap: BitPackedGrid::new(width, height),
+            ground_truth: BitPackedGrid::new(width, height),
             width,
             height,
         }
@@ -54,17 +62,22 @@ impl SampleGrid {
         SampleGrid::create_from_string(s)
     }
 
-    /// Initializes the bitfield from the sampling grid values, where
-    /// 0.0 indicates an obsgtacle
-    fn init_gridmap(&mut self) {
+    /// Initializes an area of the bitfield from the sampling grid values, where
+    /// 0.0 indicates a guaranteed obstacles and (0,1) indicates a probability
+    fn init_gridmap_area(&mut self, x: usize, y: usize, width: usize, height: usize) {
         self.gridmap = BitPackedGrid::new(self.width, self.height);
-        for x in 0..self.width {
-            for y in 0..self.height {
+        for x in x..x + width {
+            for y in y..y + height {
                 if self.sample_grid[x][y] != 0.0 {
                     self.gridmap.set_bit_value(x, y, true);
                 }
             }
         }
+    }
+
+    /// Initializes the entire bitfield from the sampling grid values
+    fn init_gridmap(&mut self) {
+        self.init_gridmap_area(0, 0, self.width, self.height);
     }
 
     /// Samples a cell with a given chance
@@ -82,36 +95,7 @@ impl SampleGrid {
         }
     }
 
-    /// Blurs the sampling grid
-    pub fn conv_blur(&mut self, radius: usize) {
-        let mut new_grid = vec![vec![1.0; self.height]; self.width];
-        let mut kernel = vec![vec![1.0; radius * 2 + 1]; radius * 2 + 1];
-        for i in 0..radius * 2 + 1 {
-            for j in 0..radius * 2 + 1 {
-                
-                let dist = ((i as isize - radius as isize).pow(2) + (j as isize - radius as isize).pow(2)) as f32;
-                kernel[i][j] = 1.0 / (dist + 1.0);
-            }
-        }
-        for x in 0..self.width {
-            for y in 0..self.height {
-                if self.sample_grid[x][y] == 0.0 {
-                    for i in 0..radius * 2 + 1 {
-                        for j in 0..radius * 2 + 1 {
-                            let x = x.wrapping_sub(radius).wrapping_add(i);
-                            let y = y.wrapping_sub(radius).wrapping_add(j);
-                            if self.bound_check(x, y) {
-                                new_grid[x][y] = (new_grid[x][y] - kernel[i][j]).max(0.0);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        self.sample_grid = new_grid;
-    }
-
-    /// Bound check for sampling grid
+    /// Checks if within bounds
     fn bound_check(&self, x: usize, y: usize) -> bool {
         x < self.width && y < self.height
     }
@@ -150,5 +134,5 @@ mod tests {
         assert_eq!(grid.gridmap.get_bit_value(1, 0), true);
         assert_eq!(grid.gridmap.get_bit_value(0, 1), false);
     }
-    
+
 }

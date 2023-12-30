@@ -11,7 +11,7 @@ impl BitPackedGrid {
         let mut neighbors = Vec::new();
         for i in x.saturating_sub(k)..=x + k {
             for j in y.saturating_sub(k)..=y + k {
-                if self.bounds_check(x, y) && self.get_bit_value(i, j) && (i != x || j != y) {
+                if self.get_bit_value(i, j) && !(i == x && j == y) {
                     neighbors.push(((i, j), (i as isize - x as isize).abs() as usize + (j as isize - y as isize).abs() as usize));
                 }
             }
