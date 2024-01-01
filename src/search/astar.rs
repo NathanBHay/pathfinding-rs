@@ -93,7 +93,7 @@ mod tests {
 
     #[test]
     fn test_astar_bitpacked_grid() {
-        let grid = BitPackedGrid::create_from_string(".....\n.###.\n.#...\n.#.#.\n...#.".to_string());
+        let grid = BitPackedGrid::new_from_string(".....\n.###.\n.#...\n.#.#.\n...#.".to_string());
         let path = astar(
             |(x, y)| grid.adjacent(x.clone(), y.clone(), false).map(|(x, y)| ((x, y), 1)), 
             (0, 4),
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn test_astar_bitpacked_grid_with_heuristic() {
-        let grid = BitPackedGrid::create_from_string("........\n...###..\n.....#..\n.....#..\n........\n........".to_string());
+        let grid = BitPackedGrid::new_from_string("........\n...###..\n.....#..\n.....#..\n........\n........".to_string());
         let path = astar(
             |(x, y)| grid.adjacent(x.clone(), y.clone(), false).map(|(x, y)| ((x, y), 1)), 
             (0, 5),

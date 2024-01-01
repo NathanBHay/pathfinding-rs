@@ -43,16 +43,16 @@ impl SamplingGrid {
     }
 
     /// Creates a sampling grid from a string
-    pub fn create_from_string(map: String) -> SamplingGrid {
+    pub fn new_from_string(map: String) -> SamplingGrid {
         create_map_from_string(map, SamplingGrid::new_with_size, |grid, x, y| {
             grid.sample_grid[x][y] = 1.0;
         })
     }
 
     /// Creates a sampling grid from a file
-    pub fn create_from_file(filename: &str) -> SamplingGrid {
+    pub fn new_from_file(filename: &str) -> SamplingGrid {
         let s = std::fs::read_to_string(filename).expect("Unable to read file");
-        SamplingGrid::create_from_string(s)
+        SamplingGrid::new_from_string(s)
     }
 
     pub fn init_gridmap(&mut self) {
@@ -197,7 +197,7 @@ mod tests {
 
     #[test]
     fn test_create() {
-        let grid = SamplingGrid::create_from_string("..@\n.@.\n".to_string());
+        let grid = SamplingGrid::new_from_string("..@\n.@.\n".to_string());
         assert_eq!(grid.sample_grid[0][0], 1.0);
         assert_eq!(grid.sample_grid[2][0], 0.0);
         assert_eq!(grid.sample_grid[0][1], 1.0);
@@ -206,7 +206,7 @@ mod tests {
 
     #[test]
     fn test_sample() {
-        let mut grid = SamplingGrid::create_from_string("..@\n.@.\n".to_string());
+        let mut grid = SamplingGrid::new_from_string("..@\n.@.\n".to_string());
         assert_eq!(grid.sample(0, 0), true);
         assert_eq!(grid.sample(2, 0), false);
         assert_eq!(grid.sample(0, 1), true);
@@ -215,7 +215,7 @@ mod tests {
 
     #[test]
     fn test_sampling_grid_blur() {
-        let mut grid = SamplingGrid::create_from_string("...@..@".to_string());
+        let mut grid = SamplingGrid::new_from_string("...@..@".to_string());
         grid.conv_blur(2);
         assert_eq!(grid.sample_grid[0][0], 1.0);
         assert_eq!(grid.sample_grid[1][0], 0.8);
@@ -228,7 +228,7 @@ mod tests {
     #[test]
     fn test_sampling_grid_print() {
         let map = ".....\n.@.@.\n.@.@.\n.@.@.\n.....\n....@\n".to_string();
-        let mut grid = SamplingGrid::create_from_string(map.clone());
+        let mut grid = SamplingGrid::new_from_string(map.clone());
         grid.sample_all();
         assert_eq!(grid.print_cells(), map);
     }

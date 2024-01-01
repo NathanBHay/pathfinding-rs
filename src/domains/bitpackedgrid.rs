@@ -53,7 +53,7 @@ impl BitPackedGrid {
     /// Create a bitpacked grid from a string
     /// ## Arguments
     /// * `map` - A string representing the map where . is a free cell
-    pub fn create_from_string(map: String) -> BitPackedGrid {
+    pub fn new_from_string(map: String) -> BitPackedGrid {
         create_map_from_string(map, BitPackedGrid::new, |grid, x, y| {
             grid.set_bit_value(x, y, true)  
         })
@@ -64,9 +64,9 @@ impl BitPackedGrid {
     /// * `filename` - The name of the file to read from
     /// ## Returns
     /// A bitpacked grid created from a file
-    pub fn create_from_file(filename: &str) -> BitPackedGrid {
+    pub fn new_from_file(filename: &str) -> BitPackedGrid {
         let s = std::fs::read_to_string(filename).expect("Unable to read file");
-        BitPackedGrid::create_from_string(s)
+        BitPackedGrid::new_from_string(s)
     }
 
     /// Set the value if a but at a given x, y coordinate to be true or false
@@ -173,13 +173,13 @@ mod tests {
     #[test]
     fn test_bitpackedgrid_create() {
         let map_str = ".....\n.@.@.\n.@.@.\n.@.@.\n.....\n....@\n";
-        let grid = BitPackedGrid::create_from_string(map_str.to_string());
+        let grid = BitPackedGrid::new_from_string(map_str.to_string());
         assert_eq!(grid.print_cells(), map_str);
     }
 
     #[test]
     fn test_bitpackedgrid_get_neighbours() {
-        let grid = BitPackedGrid::create_from_string(".....\n.@.@.\n.@.@.\n.@.@.\n.....\n....@\n".to_string());
+        let grid = BitPackedGrid::new_from_string(".....\n.@.@.\n.@.@.\n.@.@.\n.....\n....@\n".to_string());
         assert_eq!(grid.adjacent(0, 0, false).collect::<Vec<_>>(), vec![(1, 0), (0, 1)]);
     }
 }

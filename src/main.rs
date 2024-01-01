@@ -12,7 +12,7 @@ mod fov;
 mod gridpolicies;
 
 fn main() {
-    let mut grid = SamplingGrid::create_from_file("wall2.map");
+    let mut grid = SamplingGrid::new_from_file("wall2.map");
     grid.init_gridmap();
     // grid.conv_blur(2); // Blur
     // grid.sample_grid[]
@@ -93,7 +93,7 @@ mod tests {
 
     #[test]
     fn run_basic_search() {
-        let grid = BitPackedGrid::create_from_file("map.map");
+        let grid = BitPackedGrid::new_from_file("map.map");
         let mut expanded_nodes = HashSet::new();
         let path = astar_with_expanded_set(
             |(x, y)| grid.adjacent(x.clone(), y.clone(), false).map(|(x, y)| ((x, y), 1)), 
@@ -108,7 +108,7 @@ mod tests {
 
     #[test]
     fn run_better_search() {
-        let grid = BitPackedGrid::create_from_file("map.map");
+        let grid = BitPackedGrid::new_from_file("map.map");
         let mut expanded_nodes = HashSet::new();
         let path = astar_with_expanded_set(
             |(x, y)| grid.raycast_expand((*x, *y), 4),
@@ -123,7 +123,7 @@ mod tests {
 
     // #[test]
     // fn run_sampling_grid_approach(epoch: u32) {
-    //     let mut grid = SamplingGrid::create_from_file("map.map");
+    //     let mut grid = SamplingGrid::new_from_file("map.map");
     //     grid.conv_blur(2);
     //     let mut stored_grid = HashMap::new();
     //     for _ in 0..epoch {

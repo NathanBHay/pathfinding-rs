@@ -40,7 +40,7 @@ impl HashedGrid {
     /// * `s` - A string representing the grid map
     /// ## Returns
     /// A grid map created from a string
-    pub fn create_from_string(s: String) -> HashedGrid {
+    pub fn new_from_string(s: String) -> HashedGrid {
         let mut grid = create_map_from_string(s, HashedGrid::new, |grid, x, y| {
             grid.add_obstacle(x, y)
         });
@@ -53,9 +53,9 @@ impl HashedGrid {
     /// * `filename` - The name of the file to read from
     /// ## Returns
     /// A grid map created from a file
-    pub fn create_from_file(filename: &str) -> HashedGrid {
+    pub fn new_from_file(filename: &str) -> HashedGrid {
         let s = read_to_string(filename).expect("Unable to read file");
-        HashedGrid::create_from_string(s)
+        HashedGrid::new_from_string(s)
     }
 
     /// Inverts the grid map
@@ -175,9 +175,9 @@ mod tests {
     }
 
     #[test]
-    fn test_grid_create_from_string() {
+    fn test_grid_new_from_string() {
         let map_str = ".....\n.@.@.\n.@.@.\n.@.@.\n.....\n....@\n";
-        let grid = HashedGrid::create_from_string(map_str.to_string());
+        let grid = HashedGrid::new_from_string(map_str.to_string());
         assert_eq!(grid.width, 5);
         assert_eq!(grid.height, 6);
         assert_eq!(grid.get_map_value(0, 0), true);
@@ -190,7 +190,7 @@ mod tests {
 
     #[test]
     fn test_grid_adjacent() {
-        let grid = HashedGrid::create_from_string(String::from("...\n@.@\n@.@"));
+        let grid = HashedGrid::new_from_string(String::from("...\n@.@\n@.@"));
         let neighbors = grid.adjacent(2, 1, true).collect::<Vec<_>>();
         assert_eq!(neighbors, vec![(1, 1), (2, 0), (1, 2), (1, 0)]);
     }
