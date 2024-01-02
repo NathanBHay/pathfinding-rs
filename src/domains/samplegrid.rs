@@ -1,6 +1,6 @@
 use super::bitpackedgrid::BitPackedGrid;
 use super::{create_map_from_string, plot_cells, print_cells};
-use crate::util::matrix::{convolve2d, ConvResolve, gaussian_kernal};
+use crate::util::matrix::{convolve2d, ConvResolve, gaussian_kernal, matrix_overlay};
 use crate::util::filter::KalmanNode;
 
 pub struct SampleGrid {
@@ -78,7 +78,7 @@ impl SampleGrid {
     
     /// Initializes an area of the bitfield from the sampling grid values, where
     /// 0.0 indicates a guaranteed obstacles and (0,1) indicates a probability
-    pub fn init_gridmap_area(&mut self, x: usize, y: usize, width: usize, height: usize) {
+    pub fn init_gridmap_area(&mut self, (x, y): (usize, usize), width: usize, height: usize) {
         for x in x..x + width {
             for y in y..y + height {
                 self.gridmap.set_bit_value(x, y, self.sample_grid[x][y].state != 0.0);
@@ -86,18 +86,18 @@ impl SampleGrid {
         }
     }
 
-    pub fn init_gridmap_radius(&mut self, x: usize, y: usize, radius: usize) {
+    pub fn init_gridmap_radius(&mut self, (x, y): (usize, usize), radius: usize) {
         let radius = radius + 1;
         let x_min = x.saturating_sub(radius);
         let y_min = y.saturating_sub(radius);
         let x_max = (x + radius).min(self.width);
         let y_max = (y + radius).min(self.height);
-        self.init_gridmap_area(x_min, y_min, x_max - x_min, y_max - y_min);
+        self.init_gridmap_area((x_min, y_min), x_max - x_min, y_max - y_min);
     }
 
     /// Initializes the gridmap from the sampling grid
     pub fn init_gridmap(&mut self) {
-        self.init_gridmap_area(0, 0, self.width, self.height);
+        self.init_gridmap_area((0, 0), self.width, self.height);
     }
 
     /// Initializes the ground truth grid from the sampling grid
@@ -121,18 +121,36 @@ impl SampleGrid {
     }
 
     /// Samples a cell with a given chance
-    pub fn sample(&mut self, x: usize, y: usize) {
+    pub fn sample(&mut self, (x, y): (usize, usize)) {
         let value = self.sample_grid[x][y].state != 0.0 && rand::random::<f32>() < self.sample_grid[x][y].state;
         self.gridmap.set_bit_value(x, y, value);
     }
 
-    /// Samples all cells in the grid
-    pub fn sample_all(&mut self) {
-        for x in 0..self.width {
-            for y in 0..self.height {
-                self.sample(x, y);
+    pub fn sample_area(&mut self, (x, y): (usize, usize), width: usize, height: usize) {
+        for x in x..x + width {
+            for y in y..y + height {
+                self.sample((x, y));
             }
         }
+    }
+
+    pub fn radius_calc(&self, (x, y): (usize, usize), radius: usize) -> ((usize, usize), usize, usize) {
+        let radius = radius + 1;
+        let x_min = x.saturating_sub(radius);
+        let y_min = y.saturating_sub(radius);
+        let x_max = (x + radius).min(self.width);
+        let y_max = (y + radius).min(self.height);
+        ((x_min, y_min), x_max - x_min, y_max - y_min)
+    }
+
+    pub fn sample_radius(&mut self, (x, y): (usize, usize), radius: usize) {
+        let (n, width, height) = self.radius_calc((x, y), radius);
+        self.sample_area(n, width, height);
+    }
+
+    /// Samples all cells in the grid
+    pub fn sample_all(&mut self) {
+        self.sample_area((0, 0), self.width, self.height)
     }
 
     /// Samples a cell with a given chance
@@ -140,9 +158,17 @@ impl SampleGrid {
     /// * `x` - The x coordinate of the cell to sample
     /// * `y` - The y coordinate of the cell to sample
     /// * `measurement_covariance` - The variance of the measurement where 0.0 is a perfect measurement
-    pub fn update_sample(&mut self, x: usize, y: usize, measurement_covariance: f32) {
+    pub fn update_node(&mut self, (x, y): (usize, usize), measurement_covariance: f32) {
         let measurement = self.ground_truth.get_bit_value(x, y) as u8 as f32;
         self.sample_grid[x][y].update(measurement, measurement_covariance);
+    }
+
+    pub fn update_node_kern(&mut self, (x, y): (usize, usize), radius: usize) {
+        let kernel = gaussian_kernal(radius, 1.0);
+        let kernel_size = (kernel.len(), kernel.len());
+        for (n, (i, j)) in matrix_overlay((self.width, self.height), kernel_size, (x, y)) {
+            self.update_node(n, kernel[i][j]);
+        }
     }
 
     /// Checks if within bounds
@@ -188,7 +214,7 @@ mod tests {
     #[test]
     fn test_gridmap_init() {
         let mut grid = SampleGrid::new_from_string("@....\n.....\n.....\n.....\n".to_string());
-        grid.init_gridmap_radius(0, 0, 2);
+        grid.init_gridmap_radius((0, 0), 2);
         grid.init_ground_truth();
         assert_eq!(grid.ground_truth.print_cells(), "@....\n.....\n.....\n.....\n");
         assert_eq!(grid.gridmap.print_cells(), "@..@@\n...@@\n...@@\n@@@@@\n");

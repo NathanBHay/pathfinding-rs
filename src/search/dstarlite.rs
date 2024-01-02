@@ -42,8 +42,9 @@ struct DStarLite<E, I, N, C, H, M, J> where
     J: IntoIterator<Item = N>
 {
     expander: E,
-    start: N,
+    current: N,
     goal: N,
+    final_path: Vec<N>,
     heuristic: H,
     mutator: M,
     /// k_m is the lookahead value
@@ -77,8 +78,9 @@ impl<E, I, N, C, H, M, J> DStarLite<E, I, N, C, H, M, J> where
         let start_h = (heuristic)(&start, &goal);
         let mut dstar = DStarLite {
             expander,
-            start: start.clone(), 
+            current: start.clone(), 
             goal: goal.clone(),
+            final_path: vec![start.clone()],
             heuristic,
             mutator,
             rhs: HashMap::from([(start.clone(), C::default())]),
@@ -97,23 +99,23 @@ impl<E, I, N, C, H, M, J> DStarLite<E, I, N, C, H, M, J> where
     /// Run the algorithm for one step
     pub fn step(&mut self) {
         // Moves to new start position
-        self.start = (self.expander)(&self.start)
+        self.current = (self.expander)(&self.current)
             .into_iter()
             .min_by_key(|(child, cost)| RevSome(self.g_score.get(&child).map(|g| g.clone() + cost.clone())))
             .map(|(child, _)| child.clone())
-            .unwrap_or(self.start.clone()); // Not safe
-    
+            .unwrap_or(self.current.clone()); // Not safe
+        self.final_path.push(self.current.clone());
+
         // This section is currently unoptimised due to problem constraints
-        let mut mutated = (self.mutator)(&self.start).into_iter().peekable();
+        let mut mutated = (self.mutator)(&self.current).into_iter().peekable();
         if mutated.peek().is_some() {
-            self.k_m = self.k_m.clone() + (self.heuristic)(&self.s_last, &self.start);
-            self.s_last = self.start.clone();
+            self.k_m = self.k_m.clone() + (self.heuristic)(&self.s_last, &self.current);
+            self.s_last = self.current.clone();
             for node in mutated {
                 self.update_vertex(node);
             }
             self.compute_shortest_dist();
         }
-        assert!(self.rhs.contains_key(&self.start), "There is no path to the goal");
     }
 
     /// Calculate the key for a vertex
@@ -121,7 +123,7 @@ impl<E, I, N, C, H, M, J> DStarLite<E, I, N, C, H, M, J> where
         let min = std::cmp::min(RevSome(self.g_score.get(node)), RevSome(self.rhs.get(node)));
         match min.0 {
             Some(min) => Some((
-                min.clone() + (self.heuristic)(&self.start, &node) + self.k_m.clone(), 
+                min.clone() + (self.heuristic)(&self.current, &node) + self.k_m.clone(), 
                 min.clone()
             )),
             None => None,
@@ -144,8 +146,8 @@ impl<E, I, N, C, H, M, J> DStarLite<E, I, N, C, H, M, J> where
     /// Compute the shortest path similar to a*
     fn compute_shortest_dist(&mut self) {
         while let Some(SearchNodeState { node, cost }) = self.queue.pop() {
-            if !(cost < self.calculate_key(&self.start)
-            || RevSome(self.rhs.get(&self.start)) > RevSome(self.g_score.get(&self.start))) {
+            if !(cost < self.calculate_key(&self.current)
+            || RevSome(self.rhs.get(&self.current)) > RevSome(self.g_score.get(&self.current))) {
                 continue;
             }
             let new_cost = self.calculate_key(&node);
@@ -191,9 +193,9 @@ impl<E, I, N, C, H, M, J> DStarLite<E, I, N, C, H, M, J> where
 
     /// Get the path from the start to the goal
     fn path(&self) -> Option<(Vec<N>, C)> {
-        let mut path = vec![self.start.clone()];
+        let mut path = vec![self.current.clone()];
         let mut cost = C::default();
-        let mut current = self.start.clone();
+        let mut current = self.current.clone();
         while current != self.goal {
             let mut min = RevSome(Some(C::default()));
             let mut next = current.clone();
@@ -234,9 +236,9 @@ mod tests {
 
     #[test]
     fn test_shortest_distance() {
-        let grid = BitPackedGrid::create_from_string("........\n...###..\n.....#..\n.....#..\n........\n........".to_string());
+        let grid = BitPackedGrid::new_from_string("........\n...###..\n.....#..\n.....#..\n........\n........".to_string());
         let mut dstar = DStarLite::new(
-            |(x, y)| grid.adjacent(x.clone(), y.clone(), false).map(|(x, y)| ((x, y), 1)), 
+            |(x, y)| grid.adjacent((x.clone(), y.clone()), false).map(|(x, y)| ((x, y), 1)), 
             (0, 5),
             (7, 0),
             |node1, node2| manhattan_distance(*node1, *node2),

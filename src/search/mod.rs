@@ -4,8 +4,8 @@ use std::{collections::HashMap, hash::Hash, ops::Add, cmp::Ordering};
 
 pub mod uninformed;
 pub mod astar;
-pub mod idastar;
 pub mod dstarlite;
+pub mod samplestar;
 
 /// Reconstructs a path from a given node to the start node
 /// ## Arguments

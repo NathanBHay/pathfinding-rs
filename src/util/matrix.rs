@@ -16,15 +16,13 @@ where
     K: Clone,
 {
     let mut result = vec![vec![T::default(); matrix[0].len()]; matrix.len()];
-    let kernel_width = kernel.len();
-    let kernel_height = kernel[0].len();
-    let kernel_center_x = kernel_width / 2;
-    let kernel_center_y = kernel_height / 2;
+    let kernel_center_x = kernel.len() / 2;
+    let kernel_center_y = kernel[0].len() / 2;
     for x in 0..matrix.len() {
         for y in 0..matrix[0].len() {
             let mut sum = T::default();
-            for i in 0..kernel_width {
-                for j in 0..kernel_height {
+            for i in 0..kernel.len() {
+                for j in 0..kernel[0].len() {
                     let matrix_x = (x + i) as i64 - kernel_center_x as i64;
                     let matrix_y = (y + j) as i64 - kernel_center_y as i64;
                     sum = sum + resolution.resolve(matrix, matrix_x, matrix_y) * kernel[i][j].clone();
@@ -38,11 +36,13 @@ where
 
 /// Resolution method for resolving the value of a matrix at the edges.
 pub enum ConvResolve<T: Clone> {
-    /// Fill the matrix with the given value.
+    /// Fill the matrix with the given value. |T T T|a b c|T T T|
     Fill(T),
-    /// Wrap around the matrix.
+    /// Wrap around the matrix. |a b c|a b c|b c|
     Wrap,
+    /// Use the nearest value. |a a a|a b c|c c c|
     Nearest,
+    /// Reflect the matrix. |c b a|a b c|c b a|
     Reflect
 }
 
@@ -83,6 +83,26 @@ impl<T: Clone> ConvResolve<T> {
         };
         matrix[matrix_x as usize][matrix_y as usize].clone()
     }
+}
+
+pub fn matrix_overlay(
+    (matrix_w, matrix_h): (usize, usize),
+    (kernel_w, kernel_h): (usize, usize),
+    (x, y): (usize, usize),
+) -> impl Iterator<Item = ((usize, usize), (usize, usize))>
+{
+    let kernel_center_x = kernel_w / 2;
+    let kernel_center_y = kernel_h / 2;
+    (0..kernel_w).flat_map(move |i| (0..kernel_h).map(move |j| (i, j)))
+        .filter_map(move |(i, j)| {
+            let (matrix_x, underflow_x) = (x + i).overflowing_sub(kernel_center_x);
+            let (matrix_y, underflow_y) = (y + j).overflowing_sub(kernel_center_y);
+            if !underflow_x && !underflow_y && matrix_x < matrix_w && matrix_y < matrix_h {
+                Some(((matrix_x, matrix_y), (i, j)))
+            } else {
+                None
+            }
+        })
 }
 
 /// Create a gaussian kernel.
@@ -166,6 +186,20 @@ mod tests {
             vec![21, 27, 33],
             vec![39, 45, 51],
             vec![57, 63, 69],
+        ]);
+    }
+
+    #[test]
+    fn test_matrix2d_combine() {
+        let mut matrix = count(3, 3);
+        let kernel = ones(5);
+        for ((x, y), (i, j)) in matrix_overlay((matrix.len(), matrix[0].len()), (kernel.len(), kernel[0].len()), (1, 1)) {
+            matrix[x][y] += kernel[i][j];
+        }
+        assert_eq!(matrix, vec![
+            vec![2, 3, 4],
+            vec![5, 6, 7],
+            vec![8, 9, 10],
         ]);
     }
 

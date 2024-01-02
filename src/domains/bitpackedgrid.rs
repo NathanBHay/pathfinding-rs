@@ -120,18 +120,12 @@ impl BitPackedGrid {
     }
 
     /// Get the neighbors of a given cell
-    pub fn adjacent(&self, x: usize, y: usize, diagonal: bool) -> impl Iterator<Item = (usize, usize)> + '_ {
+    pub fn adjacent(&self, (x, y): (usize, usize), diagonal: bool) -> impl Iterator<Item = (usize, usize)> + '_ {
         neighbors(x, y, diagonal).filter(move |(x, y)| self.get_bit_value(*x, *y))
     }
 
-    pub fn grid_section(&self, x: usize, y: usize, width: usize, height: usize) -> Vec<Vec<f32>> {
-        let mut grid = vec![vec![0.0; width]; height];
-        for i in x..(x+width) {
-            for j in y..(y+height) {
-                grid[i-x][j-y] = self.get_bit_value(i, j) as u8 as f32;
-            }
-        }
-        grid
+    pub fn adjacent1(&self, (x, y): (usize, usize)) -> impl Iterator<Item = ((usize, usize), usize)> + '_ {
+        self.adjacent((x, y), false).map(|n| (n,1))
     }
 
     pub fn plot_cells(&self, filename: &str, path: Option<Vec<(usize, usize)>>, heatmap: Option<Vec<((usize, usize), f64)>>) {
@@ -180,6 +174,6 @@ mod tests {
     #[test]
     fn test_bitpackedgrid_get_neighbours() {
         let grid = BitPackedGrid::new_from_string(".....\n.@.@.\n.@.@.\n.@.@.\n.....\n....@\n".to_string());
-        assert_eq!(grid.adjacent(0, 0, false).collect::<Vec<_>>(), vec![(1, 0), (0, 1)]);
+        assert_eq!(grid.adjacent((0, 0), false).collect::<Vec<_>>(), vec![(1, 0), (0, 1)]);
     }
 }
