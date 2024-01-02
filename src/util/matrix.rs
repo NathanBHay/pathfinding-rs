@@ -6,11 +6,15 @@ use std::ops::{Add, Mul};
 /// * `matrix` - The matrix to convolve.
 /// * `kernel` - The kernel to convolve with.
 /// * `resolution` - The resolution to use when resolving the matrix at the edges.
-pub fn convolve2d<T: Add<Output = T> + Mul<Output = T> + Clone + Default>(
+pub fn convolve2d<T, K>(
     matrix: &Vec<Vec<T>>,
-    kernel: &Vec<Vec<T>>,
+    kernel: &Vec<Vec<K>>,
     resolution: ConvResolve<T>
-) -> Vec<Vec<T>> {
+) -> Vec<Vec<T>> 
+where 
+    T: Clone + Default + Add<Output = T> + Mul<K, Output = T>,
+    K: Clone,
+{
     let mut result = vec![vec![T::default(); matrix[0].len()]; matrix.len()];
     let kernel_width = kernel.len();
     let kernel_height = kernel[0].len();

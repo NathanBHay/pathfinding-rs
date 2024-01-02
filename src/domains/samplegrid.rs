@@ -1,6 +1,7 @@
 use super::bitpackedgrid::BitPackedGrid;
 use super::{create_map_from_string, plot_cells, print_cells};
 use crate::util::matrix::{convolve2d, ConvResolve, gaussian_kernal};
+use crate::util::filter::KalmanNode;
 
 pub struct SampleGrid {
     /// The sampling grid which determines the probability of a cell being occupied.
@@ -108,19 +109,15 @@ impl SampleGrid {
         }
     }
 
-    /// Blurs the sampling grid with a gaussian kernal
+    /// Blurs the sampling grid with a gaussian kernal.
+    /// Note that this operation sets all covariances to 1.0
     pub fn blur_samplegrid(&mut self, size: usize, sigma: f32) {
         let kernal = gaussian_kernal(size, sigma);
-        let sample_grid = convolve2d(
-            &kalman_grid_states(&self.sample_grid),
+        self.sample_grid = convolve2d(
+            &self.sample_grid,
             &kernal,
             ConvResolve::Nearest,
         );
-        for x in 0..self.width {
-            for y in 0..self.height {
-                self.sample_grid[x][y].state = sample_grid[x][y];
-            }
-        } 
     }
 
     /// Samples a cell with a given chance
@@ -162,40 +159,9 @@ impl SampleGrid {
     }
 }
 
-
-/// A 1-dimensional Kalman filter node
-/// Adapted from kalmanfilter.net/kalman1d_pn.html
-#[derive(Clone, Debug)]
-pub struct KalmanNode {
-    state: f32,
-    covariance: f32,
-}
-
-// Might make KalmanNode have Eq which is self.state == other.state
-impl KalmanNode {
-    /// Update the state of the Kalman filter given a measurement and measurement covariance
-    /// ## Arguments
-    /// * `measurement` - The measurement to update the state with
-    /// * `measurement_covariance` - The covariance of the measurement
-    fn update(&mut self, measurement: f32, measurement_covariance: f32) -> f32 {
-        // As the model is 1D state and covariance predictions are the same
-        let kalman_gain = self.covariance / (self.covariance + measurement_covariance);
-        self.state = self.state + kalman_gain * (measurement - self.state);
-        self.covariance = (1.0 - kalman_gain) * self.covariance;
-        self.state
-    }
-}
-
-/// Converts a kalman grid to a grid of states
-fn kalman_grid_states(kalman_grid: &Vec<Vec<KalmanNode>>) -> Vec<Vec<f32>> {
-    kalman_grid.iter()
-        .map(|row| row.iter().map(|node| node.state).collect::<Vec<_>>())
-        .collect::<Vec<_>>()
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{SampleGrid, kalman_grid_states};
+    use super::SampleGrid;
 
     #[test]
     fn test_samplegrid_new() {
@@ -232,26 +198,16 @@ mod tests {
     fn test_blur() {
         let mut grid = SampleGrid::new_from_string("@....\n@@...\n@@@..\n@@@..\n@@...\n".to_string());
         grid.blur_samplegrid(3, 1.0);
-        assert_eq!(kalman_grid_states(&grid.sample_grid), vec![
+        let grid_sample: Vec<Vec<f32>> = grid.sample_grid
+            .iter()
+            .map(|row| row.iter().map(|node| node.state).collect())
+            .collect();
+        assert_eq!(grid_sample, vec![
             vec![0.19895503, 0.07511361, 0.0, 0.0, 0.0],
             vec![0.60209, 0.32279643, 0.07511361, 0.07511361, 0.19895503],
             vec![0.9248864, 0.6772036, 0.39791006, 0.39791006, 0.60209],
             vec![1.0, 0.9248864, 0.801045, 0.801045, 0.9248864],
             vec![1.0, 1.0, 1.0, 1.0, 1.0]
         ]);
-    }
-
-    #[test]
-    fn test_kalman_filter() {
-        let mut node = super::KalmanNode {
-            state: 60.0,
-            covariance: 225.0,
-        };
-        let state = node.update(49.03, 25.0);
-        assert_eq!(state, 50.127);
-        assert_eq!(node.covariance, 22.500006);
-        let state = node.update(48.44, 25.0);
-        assert_eq!(state, 49.327892);
-        assert_eq!(node.covariance, 11.842108);
     }
 }
