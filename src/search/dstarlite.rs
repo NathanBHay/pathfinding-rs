@@ -97,7 +97,10 @@ impl<E, I, N, C, H, M, J> DStarLite<E, I, N, C, H, M, J> where
     }
     
     /// Run the algorithm for one step
-    pub fn step(&mut self) {
+    pub fn step(&mut self) -> bool {
+        if self.current == self.goal {
+            return true;
+        } 
         // Moves to new start position
         self.current = (self.expander)(&self.current)
             .into_iter()
@@ -116,6 +119,7 @@ impl<E, I, N, C, H, M, J> DStarLite<E, I, N, C, H, M, J> where
             }
             self.compute_shortest_dist();
         }
+        false
     }
 
     /// Calculate the key for a vertex
@@ -246,5 +250,15 @@ mod tests {
         );
         dstar.step();
         assert_eq!(dstar.path().unwrap().0, vec![(0, 5), (1, 5), (2, 5), (3, 5), (4, 5), (5, 5), (6, 5), (6, 4), (7, 4), (7, 3), (7, 2), (7, 1), (7, 0)]);
+    }
+
+    #[test]
+    fn test_dstarlite() {
+        // let file = "basic.map";
+        // let start = (1, 1);
+        // let goal = (30, 25);
+        let file = "map.map";
+        let start = (225, 225);
+        let goal = (70, 40);
     }
 }

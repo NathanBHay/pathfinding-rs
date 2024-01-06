@@ -55,7 +55,7 @@ impl BitPackedGrid {
     /// * `map` - A string representing the map where . is a free cell
     pub fn new_from_string(map: String) -> BitPackedGrid {
         create_map_from_string(map, BitPackedGrid::new, |grid, x, y| {
-            grid.set_bit_value(x, y, true)  
+            grid.set_bit_value((x, y), true)  
         })
     }
 
@@ -70,8 +70,8 @@ impl BitPackedGrid {
     }
 
     /// Set the value if a but at a given x, y coordinate to be true or false
-    pub fn set_bit_value(&mut self, x: usize, y: usize, value: bool) {
-        let map_id = self.get_map_id(x, y);
+    pub fn set_bit_value(&mut self, (x, y): (usize, usize), value: bool) {
+        let map_id = self.get_map_id((x, y));
         let word_index = map_id >> BitPackedGrid::LOG2_BITS_PER_WORD;
         let mask = 1 << (map_id & BitPackedGrid::INDEX_MASK);
         if value {
@@ -82,25 +82,24 @@ impl BitPackedGrid {
     }
 
     /// Get the value of a bit at a given x, y coordinate
-    pub fn get_bit_value(&self, x: usize, y: usize) -> bool {
-        let map_id = self.get_map_id(x, y);
+    pub fn get_bit_value(&self, (x, y): (usize, usize)) -> bool {
+        let map_id = self.get_map_id((x, y));
         let word_index = map_id >> BitPackedGrid::LOG2_BITS_PER_WORD;
         let mask = 1 << (map_id & BitPackedGrid::INDEX_MASK);
         (self.map_cells[word_index as usize] & mask) != 0
     }
 
     /// Check if a given x, y coordinate is within the bounds of the map
-    pub fn bounds_check(&self, x: usize, y: usize) -> bool {
+    pub fn bounds_check(&self, (x, y): (usize, usize)) -> bool {
         x < self.original_width && y < self.original_height
     }
 
     /// Convert x, y to map id
     /// ## Arguments
-    /// * `x` - The x coordinate of the cell [0, original width)
-    /// * `y` - The y coordinate of the cell [0, original height)
+    /// * `(x, y)` - The coordinates of the cell [0, original width)
     /// ## Returns
     /// The map id of the cell
-    fn get_map_id(&self, x: usize, y: usize) -> usize {
+    fn get_map_id(&self, (x, y): (usize, usize)) -> usize {
         self.map_width * (y.wrapping_add(BitPackedGrid::PADDING))
             + (x.wrapping_add(BitPackedGrid::PADDING))
     }
@@ -113,15 +112,15 @@ impl BitPackedGrid {
     }
 
     /// Prints the grid map where . is a free cell and @ is an obstacle
-    pub fn print_cells(&self) -> String {
+    pub fn print_cells(&self, path: Option<Vec<(usize, usize)>>) -> String {
         print_cells(self.original_width, self.original_height, |x, y| {
-            self.get_bit_value(x, y)
-        }, None)
+            self.get_bit_value((x, y))
+        }, path)
     }
 
     /// Get the neighbors of a given cell
     pub fn adjacent(&self, (x, y): (usize, usize), diagonal: bool) -> impl Iterator<Item = (usize, usize)> + '_ {
-        neighbors(x, y, diagonal).filter(move |(x, y)| self.get_bit_value(*x, *y))
+        neighbors(x, y, diagonal).filter(move |(x, y)| self.get_bit_value((*x, *y)))
     }
 
     pub fn adjacent1(&self, (x, y): (usize, usize)) -> impl Iterator<Item = ((usize, usize), usize)> + '_ {
@@ -130,7 +129,7 @@ impl BitPackedGrid {
 
     pub fn plot_cells(&self, filename: &str, path: Option<Vec<(usize, usize)>>, heatmap: Option<Vec<((usize, usize), f64)>>) {
         plot_cells(self.original_width, self.original_height, filename, |x, y| {
-            self.get_bit_value(x, y)
+            self.get_bit_value((x, y))
         }, path, heatmap)
     }
 }
@@ -154,21 +153,21 @@ mod tests {
     #[test]
     fn test_bitpackedgrid_set_bit_value() {
         let mut grid = BitPackedGrid::new(16, 16);
-        grid.set_bit_value(0, 0, true);
-        assert_eq!(grid.get_bit_value(0, 0), true);
-        grid.set_bit_value(0, 0, false);
-        assert_eq!(grid.get_bit_value(0, 0), false);
-        grid.set_bit_value(15, 15, true);
-        assert_eq!(grid.get_bit_value(15, 15), true);
-        grid.set_bit_value(15, 5, true);
-        assert_eq!(grid.get_bit_value(15, 5), true);
+        grid.set_bit_value((0, 0), true);
+        assert_eq!(grid.get_bit_value((0, 0)), true);
+        grid.set_bit_value((0, 0), false);
+        assert_eq!(grid.get_bit_value((0, 0)), false);
+        grid.set_bit_value((15, 15), true);
+        assert_eq!(grid.get_bit_value((15, 15)), true);
+        grid.set_bit_value((15, 5), true);
+        assert_eq!(grid.get_bit_value((15, 5)), true);
     }
 
     #[test]
     fn test_bitpackedgrid_create() {
         let map_str = ".....\n.@.@.\n.@.@.\n.@.@.\n.....\n....@\n";
         let grid = BitPackedGrid::new_from_string(map_str.to_string());
-        assert_eq!(grid.print_cells(), map_str);
+        assert_eq!(grid.print_cells(None), map_str);
     }
 
     #[test]

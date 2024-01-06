@@ -6,7 +6,7 @@ use crate::fov::fieldofvision::raycasting_with_dist;
 impl BitPackedGrid {
     /// Find the neighbors of a cell that are visible from that cell.
     pub fn raycast_expand(&self, (x, y): (usize, usize), radius: usize) -> Vec<((usize, usize), usize)> {
-        let mut visible = raycasting_with_dist((x, y), radius, |x, y| self.get_bit_value(x, y), |x| x * x );
+        let mut visible = raycasting_with_dist((x, y), radius, |x, y| self.get_bit_value((x, y)), |x| x * x );
         visible.retain(|(p, _)| p != &(x, y));
         visible
     }
