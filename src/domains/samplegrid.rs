@@ -66,7 +66,8 @@ impl SampleGrid {
         let mut grid = create_map_from_string(map, SampleGrid::new_with_size, |grid, x, y| {
             grid.sample_grid[x][y].state = 1.0;
         });
-        grid.init_ground_truth();
+        grid.init_ground_truth(); // These aren't good practice as they are an
+        grid.init_gridmap();      // weird side effect
         grid
     }
 
@@ -191,6 +192,8 @@ impl SampleGrid {
 
 #[cfg(test)]
 mod tests {
+    use crate::domains::bitpackedgrid::BitPackedGrid;
+
     use super::SampleGrid;
 
     #[test]
@@ -218,6 +221,7 @@ mod tests {
     #[test]
     fn test_gridmap_init() {
         let mut grid = SampleGrid::new_from_string("@....\n.....\n.....\n.....\n".to_string());
+        grid.gridmap = BitPackedGrid::new(grid.width, grid.height);
         grid.init_gridmap_radius((0, 0), 2);
         grid.init_ground_truth();
         assert_eq!(grid.ground_truth.print_cells(None), "@....\n.....\n.....\n.....\n");

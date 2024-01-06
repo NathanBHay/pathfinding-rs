@@ -12,6 +12,14 @@ impl BitPackedGrid {
     }
 }
 
+// TODO: Reimplement visibility for sample grid where raycast outputs a kernel of:
+// [1, 1, 1]
+// [0, 1, 1]
+// [1, 0, 0]
+// Where 1 implies visible and 0 implies not visible. Therefore through 
+// elementwise multiplication with the gaussian kernel we can find the 
+// we can find if vis[i][j] then kernel[i][j] else 1.0
+
 // May still be useful
 // impl SamplingGrid {
     // pub fn raycast_expand(&self, (x, y): (usize, usize), radius: usize) -> Vec<((usize, usize), usize)> {

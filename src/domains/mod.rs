@@ -153,7 +153,7 @@ pub(crate) fn plot_cells(
 }
 
 /// Helper function to get a iterator of the neighbors of a cell
-pub(crate) fn neighbors(
+pub fn neighbors(
     x: usize, 
     y: usize, 
     diagonal: bool

@@ -1,17 +1,27 @@
+//! # SampleStar
+//! A 
+
 use std::collections::HashMap;
 
-use crate::{domains::samplegrid::SampleGrid, heuristics::distance::manhattan_distance, util::matrix::gaussian_kernal};
+use crate::{domains::samplegrid::SampleGrid, heuristics::distance::manhattan_distance, util::visualiser::{Visualiser, self}};
 
 use super::astar::astar;
 
+/// Sample Star Algorithm
+/// ## Arguments
+/// * `grid` - The sampling grid to search on.
+/// * `start` - The starting node.
+/// * `goal` - The goal node.
+/// * `epoch` - The number of times to sample each node.
+/// * `radius` - The radius to sample around each node.
 pub struct SampleStar {
     grid: SampleGrid,
     current: (usize, usize),
     goal: (usize, usize),
-    final_path: Vec<(usize, usize)>,
     epoch: usize,
     radius: usize,
-    kernel: Vec<Vec<f32>>,
+    final_path: Vec<(usize, usize)>,
+    visualiser: Option<Visualiser>,
 }
 
 impl SampleStar {
@@ -22,10 +32,10 @@ impl SampleStar {
             grid,
             current: start,
             goal,
-            final_path: Vec::new(),
             epoch,
-            kernel: gaussian_kernal(radius.clone(), 1.0),
             radius,
+            final_path: Vec::new(),
+            visualiser: None,
         }
     }
 
@@ -43,7 +53,7 @@ impl SampleStar {
             let path = astar(
                 |n| self.grid.gridmap.adjacent1(*n),
                 self.current,
-                |n| n == &self.goal,
+                |n| *n == self.goal,
                 |n| manhattan_distance(*n, self.goal),
             );
             if let Some((path, _)) = path {
@@ -53,13 +63,22 @@ impl SampleStar {
                 }
             }
         }
+        let old = self.current;
+
         self.current = self.grid.gridmap.adjacent(self.current, false)
             .max_by_key(|n| heatmap.get(n))
             .unwrap_or(self.current) // If no path exists stay at node
             .clone();
-        println!("Current: {:?}", self.current);
         self.final_path.push(self.current);
+
+        if let Some(visualiser) = &self.visualiser {
+            visualiser.visualise_iteration(&self.grid, self.final_path.len(), Some(old), Some(self.current), &heatmap);
+        }
         false
+    }
+
+    pub fn add_visualiser(&mut self, file_path: &str) {
+        self.visualiser = Some(Visualiser::new(file_path, &self.grid, Some(self.current), Some(self.goal)));
     }
 }
 
@@ -76,17 +95,22 @@ mod tests {
 
     #[test]
     fn test_samplestar() {
-        // let file = "basic.map";
-        // let start = (1, 1);
-        // let goal = (30, 25);
-        let file = "map.map";
-        let start = (225, 225);
-        let goal = (70, 40);
+        let file = "tests/basic.map";
+        let start = (1, 1);
+        let goal = (30, 30);
+        // let file = "tests/map.map";
+        // let start = (225, 225);
+        // let goal = (70, 40);
         let mut grid = SampleGrid::new_from_file(file);
         grid.blur_samplegrid(5, 1.0);
         let mut samplestar = SampleStar::new(grid, start, goal, 1, 2);
-        while !samplestar.step() {}
-        samplestar.grid.ground_truth.plot_cells("test.png", Some(samplestar.final_path.clone()), None);
+        samplestar.add_visualiser("test");
+
+        // while !samplestar.step() {}
+        for _ in 0..100 {
+            samplestar.step();
+        }
+        samplestar.visualiser.as_ref().unwrap().visualise_final_path(&samplestar.final_path);
         assert!(false);
         // assert_eq!(samplestar.final_path.len(), 100);
     }

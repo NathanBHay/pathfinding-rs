@@ -1,5 +1,8 @@
-// //! An A-Star Implementation with drop-in heuristic, expander, and domain.
-// //! The implementation is similar to the approach used by 
+//! # A-Star Search
+//! An A-Star Implementation with drop-in heuristic, expander, and domain.
+//! The implementation is similar to the approach used by 
+//! [Warthog](https://bitbucket.org/dharabor/pathfinding/src/master/), however
+//! is not as optimized and lacks choice of a queue.
 
 use std::{hash::Hash, collections::{HashMap, BinaryHeap, HashSet}, ops::Add};
 use super::{reconstruct_path_with_cost, SearchNodeState};

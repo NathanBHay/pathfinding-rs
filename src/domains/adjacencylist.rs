@@ -1,267 +1,96 @@
-//! # Adjacency List
-//! The following is an adjacency list representation of a graph implemented
-//! with vectors that hold a tuple of the node and the weight of the edge.
+use std::collections::HashMap;
+use std::collections::hash_map::ValuesMut;
+use std::hash::Hash;
+use std::ops::{Index, IndexMut};
 
-/// An adjacency list representation of a graph
+
 #[derive(Debug, Clone)]
-pub struct AdjacencyList {
-    pub nodes: Vec<Vec<(usize, i32)>>,
+pub struct AdjacencyList<N: Eq + Hash, W>(HashMap<N, Vec<(N, W)>>);
+
+impl<N: Eq + Hash, W> AdjacencyList<N, W> {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    pub fn new_nodes(nodes: Vec<N>) -> Self {
+        let mut map = HashMap::new();
+        for node in nodes {
+            map.insert(node, Vec::new());
+        }
+        Self(map)
+    }
+
+    pub fn add_node(&mut self, node: N) {
+        self.0.insert(node, Vec::new());
+    }
+
+    pub fn add_edge(&mut self, from: N, to: N, weight: W) {
+        self[from].push((to, weight));
+    }
+
+    pub fn remove_node(&mut self, node: N) {
+        self.0.remove(&node);
+        for (_, edges) in self.0.iter_mut() {
+            edges.retain(|(n, _)| n != &node);
+        }
+    }
+
+    pub fn remove_edge(&mut self, from: N, to: N) {
+        self[from].retain(|(n, _)| n != &to);
+    }
+
+    pub fn adjacent(&self, node: N) -> impl Iterator<Item = &(N, W)> {
+        self[node].iter()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn degree(&self, node: N) -> usize {
+        self[node].len()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&N, &Vec<(N, W)>)> {
+        self.0.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> ValuesMut<N, Vec<(N, W)>> {
+        self.0.values_mut()
+    }
 }
 
-impl AdjacencyList {
-    /// Creates a new adjacency list with a given size
-    /// ## Arguments
-    /// * `size` - The number of nodes in the graph
-    /// ## Returns
-    /// A new adjacency list with a given size
-    pub fn new(size: usize) -> AdjacencyList {
-        AdjacencyList {
-            nodes: vec![Vec::new(); size],
-        }
+impl<N: Eq + Hash, W> Index<N> for AdjacencyList<N, W> {
+    type Output = Vec<(N, W)>;
+    fn index(&self, index: N) -> &Self::Output {
+        &self.0[&index]
     }
+}
 
-    /// Adds a node to the graph
-    /// ## Arguments
-    /// * `node` - The node to add to the graph
-    /// ## Panics
-    /// Panics if the node already exists
-    /// ## Complexity
-    /// O(n) where n is the size of the node's adjacency list
-    pub fn add_node(&mut self, node: Vec<(usize, i32)>) {
-        for i in node.iter() {
-            if i.0 > self.len() {
-                panic!("Node does not exist");
-            }
-        }
-        self.nodes.push(node);
-    }
-
-    /// Removes a node from the graph
-    /// ## Arguments
-    /// * `node` - The node to remove from the graph
-    /// ## Panics
-    /// Panics if the node does not exist
-    /// ## Complexity
-    /// O(n^2) where n is the number of nodes in the graph
-    pub fn remove_node(&mut self, node: usize) {
-        if node >= self.len() {
-            panic!("Node does not exist");
-        }
-
-        self.nodes.remove(node);
-        for i in 0..self.len() {
-            self.nodes[i] = self.nodes[i]
-                .iter()
-                .filter(|&&x| x.0 != node)
-                .map(|x| if x.0 > node { (x.0 - 1, x.1) } else { *x })
-                .collect::<Vec<(usize, i32)>>();
-        }
-    }
-
-    /// Removes a node from the graph, keeping it as empty vector
-    /// ## Arguments
-    /// * `node` - The node to remove from the graph
-    /// ## Panics
-    /// Panics if the node does not exist
-    /// ## Complexity
-    /// O(n) where n is the number of nodes in the graph
-    /// ## Notes
-    /// Used mainly in maze generation as to allow for printing of the maze.
-    pub fn naive_remove_node(&mut self, node: usize) {
-        if node >= self.len() {
-            panic!("Node does not exist");
-        }
-
-        self.nodes[node] = Vec::new();
-        for i in 0..self.len() {
-            self.nodes[i].retain(|&(x, _)| x != node);
-        }
-    }
-
-    /// Adds an edge between node1 and node2
-    /// ## Arguments
-    /// * `node1` - The outgoing node
-    /// * `node2` - The incoming node
-    /// ## Panics
-    /// Panics if either node1 or node2 does not exist
-    pub fn add_edge(&mut self, node1: usize, node2: usize) {
-        self.add_edge_with_weight(node1, node2, 1)
-    }
-
-    /// Adds an edge with weight between node1 and node2 with weight
-    /// ## Arguments
-    /// * `node1` - The outgoing node
-    /// * `node2` - The incoming node
-    /// * `weight` - The weight of the edge
-    /// ## Panics
-    /// Panics if either node1 or node2 does not exist
-    pub fn add_edge_with_weight(&mut self, node1: usize, node2: usize, weight: i32) {
-        if node1 >= self.len() || node2 >= self.len() {
-            panic!("Node does not exist");
-        }
-        self.nodes[node1].push((node2, weight));
-    }
-
-    /// Adds both edges between node1 and node2
-    /// ## Arguments
-    /// * `node1` - The first node
-    /// * `node2` - The second node
-    /// ## Panics
-    /// Panics if either node1 or node2 does not exist
-    pub fn add_edges(&mut self, node1: usize, node2: usize) {
-        self.add_edges_with_weight(node1, node2, 1)
-    }
-
-    /// Adds an edge between node1 and node2
-    /// ## Arguments
-    /// * `node1` - The first node
-    /// * `node2` - The second node
-    /// * `weight` - The weight of the edge
-    /// ## Panics
-    /// Panics if either node1 or node2 does not exist
-    pub fn add_edges_with_weight(&mut self, node1: usize, node2: usize, weight: i32) {
-        self.add_edge_with_weight(node1, node2, weight);
-        self.add_edge_with_weight(node2, node1, weight);
-    }
-
-    /// Remove an outgoing edge between node1 and node2
-    /// ## Arguments
-    /// * `node1` - Outgoing node
-    /// * `node2` - Incoming Node
-    /// ## Panics
-    /// Panics if either node1 or node2 does not exist
-    /// ## Complexity
-    /// O(n) where n is the number of nodes in the graph
-    pub fn remove_edge(&mut self, node1: usize, node2: usize) {
-        if node1 >= self.len() || node2 >= self.len() {
-            panic!("Node does not exist");
-        }
-        self.nodes[node1].retain(|&x| x.0 != node2);
-    }
-
-    /// Remove both edges between node1 and node2
-    /// ## Arguments
-    /// * `node1` - The first node
-    /// * `node2` - The second node
-    /// ## Panics
-    /// Panics if either node1 or node2 does not exist
-    pub fn remove_edges(&mut self, node1: usize, node2: usize) {
-        self.remove_edge(node1, node2);
-        self.remove_edge(node2, node1);
-    }
-
-    /// Remove all outgoing edges from a node
-    /// ## Arguments
-    /// * `node` - The node to remove all edges from
-    /// ## Panics
-    /// Panics if the node does not exist
-    /// ## Complexity
-    /// O(1) where n is the number of nodes in the graph
-    pub fn remove_all_outgoing(&mut self, node: usize) {
-        if node >= self.len() {
-            panic!("Node does not exist");
-        }
-        self.nodes[node].clear();
-    }
-
-    /// Remove all incoming edges from a node
-    /// ## Arguments
-    /// * `node` - The node to remove all edges from
-    /// ## Panics
-    /// Panics if the node does not exist
-    /// ## Complexity
-    /// O(n^2) where n is the number of nodes in the graph
-    pub fn remove_all_incoming(&mut self, node: usize) {
-        if node >= self.len() {
-            panic!("Node does not exist");
-        }
-        for i in 0..self.len() {
-            self.nodes[i].retain(|&x| x.0 != node);
-        }
-    }
-
-    /// Returns the number of nodes in the graph
-    /// ## Returns
-    /// The number of nodes in the graph
-    pub fn len(&self) -> usize {
-        self.nodes.len()
-    }
-
-    /// Creates an iterator over the nodes in the graph
-    /// ## Returns
-    /// An iterator over the nodes in the graph
-    pub fn iter(&self) -> impl Iterator<Item = &Vec<(usize, i32)>> {
-        self.nodes.iter()
-    }
-
-    /// Returns the nodes adjacent to a given node
-    /// ## Arguments
-    /// * `node` - The node to find the adjacent nodes of
-    /// ## Returns
-    /// A reference to the nodes adjacent to the given node
-    pub fn adjacent(&self, node: usize) -> impl Iterator<Item = (usize, i32)> {
-        if node >= self.len() {
-            panic!("Node does not exist");
-        }
-        self.nodes[node].clone().into_iter()
-    }
-
-    /// Returns the degree of a given node
-    /// ## Arguments
-    /// * `node` - The node to find the degree of
-    /// ## Returns
-    /// The degree of the given node
-    pub fn degree(&self, node: usize) -> usize {
-        if node >= self.len() {
-            panic!("Node does not exist");
-        }
-        self.nodes[node].len()
+impl<N: Eq + Hash, W> IndexMut<N> for AdjacencyList<N, W> {
+    fn index_mut(&mut self, index: N) -> &mut Self::Output {
+        self.0.get_mut(&index).unwrap()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::domains::adjacencylist::AdjacencyList;
-
-    #[test]
-    fn test_graph_length() {
-        let mut test = AdjacencyList::new(3);
-        test.add_node(vec![(1, 1), (2, 1)]);
-        test.add_edge(1, 2);
-        assert_eq!(test.len(), 4);
-    }
+    use super::*;
 
     #[test]
     fn test_graph_add() {
-        let mut test = AdjacencyList::new(3);
-        test.add_edge(1, 2);
-        assert_eq!(test.nodes[1], vec![(2, 1)]);
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_graph_add_panic() {
-        let mut test = AdjacencyList::new(3);
-        test.add_edge(1, 3);
+        let mut test = AdjacencyList::new();
+        test.add_edge(1, 2, 1);
+        assert_eq!(test[1], vec![(2, 1)]);
     }
 
     #[test]
     fn test_graph_remove_node() {
-        let mut test = AdjacencyList::new(3);
-        test.add_edges(0, 2);
-        test.add_edges(1, 2);
+        let mut test = AdjacencyList::new_nodes((0..3).collect());
+        test.add_edge(0, 2, 1);
+        test.add_edge(1, 2, 1);
         test.remove_node(1);
         assert_eq!(test.len(), 2);
-        assert_eq!(test.nodes[0], vec![(1, 1)]);
-    }
-
-    #[test]
-    fn test_graph_naive_remove_node() {
-        let mut test = AdjacencyList::new(3);
-        test.add_edges(0, 2);
-        test.add_edges(1, 2);
-        test.naive_remove_node(1);
-        assert_eq!(test.len(), 3);
-        assert_eq!(test.adjacent(0).collect::<Vec<_>>(), vec![(2, 1)]);
+        assert_eq!(test[0], vec![(1, 1)]);
     }
 }
