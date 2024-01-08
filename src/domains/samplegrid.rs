@@ -87,6 +87,14 @@ impl SampleGrid {
         }
     }
 
+    pub fn init_gridmap_nearest(&mut self) {
+        for x in 0..self.width {
+            for y in 0..self.height {
+                self.gridmap.set_bit_value((x, y), self.sample_grid[x][y].state > 0.5);
+            }
+        }
+    }
+
     /// Initializes the gridmap from the sampling grid
     pub fn init_gridmap_radius(&mut self, (x, y): (usize, usize), radius: usize) {
         let radius = radius + 1;
@@ -169,7 +177,12 @@ impl SampleGrid {
 
     /// Updates the kernal based upon a gaussian kernal with a radius.
     pub fn update_node_kern(&mut self, (x, y): (usize, usize), radius: usize) {
-        let kernel = gaussian_kernal(radius, 1.0);
+        let mut kernel = gaussian_kernal(2*radius+1, 1.0);
+        kernel[radius][radius] = 0.0;
+        kernel[radius.saturating_sub(1)][radius] = 0.0; // This is to ensure that
+        kernel[radius][radius.saturating_sub(1)] = 0.0; // the center's measurements
+        kernel[radius.saturating_add(1)][radius] = 0.0; // are always correct
+        kernel[radius][radius.saturating_add(1)] = 0.0;
         let kernel_size = (kernel.len(), kernel.len());
         for (n, (i, j)) in matrix_overlay((self.width, self.height), kernel_size, (x, y)) {
             self.update_node(n, kernel[i][j]);
@@ -177,8 +190,13 @@ impl SampleGrid {
     }
 
     /// Checks if within bounds
-    fn bound_check(&self, x: usize, y: usize) -> bool {
+    pub fn bound_check(&self, (x, y): (usize, usize)) -> bool {
         x < self.width && y < self.height
+    }
+
+    /// Get all adjacenct cells on sampling grid
+    pub fn adjacent(&self, (x, y): (usize, usize), diagonal: bool) -> impl Iterator<Item = (usize, usize)> + '_ {
+        super::neighbors(x, y, diagonal).filter(move |(x, y)| self.bound_check((*x, *y)))
     }
 
     pub fn print_sampling_cells(&self, path: Option<Vec<(usize, usize)>>) -> String {
@@ -243,5 +261,11 @@ mod tests {
             vec![1.0, 0.9248864, 0.801045, 0.801045, 0.9248864],
             vec![1.0, 1.0, 1.0, 1.0, 1.0]
         ]);
+        grid.update_node_kern((2, 2), 1);
+        let grid_sample: Vec<Vec<f32>> = grid.sample_grid
+            .iter()
+            .map(|row| row.iter().map(|node| node.state).collect())
+            .collect();
+        println!("{:?}", grid_sample);
     }
 }

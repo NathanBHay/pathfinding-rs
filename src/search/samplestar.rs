@@ -28,13 +28,14 @@ impl SampleStar {
 
     /// Creates a new SampleStar algorithm
     pub fn new(grid: SampleGrid, start: (usize, usize), goal: (usize, usize), epoch:usize, radius: usize) -> Self {
+        assert!(grid.bound_check(start) && grid.bound_check(goal));
         Self {
             grid,
-            current: start,
+            current: start.clone(),
             goal,
             epoch,
             radius,
-            final_path: Vec::new(),
+            final_path: vec![start],
             visualiser: None,
         }
     }
@@ -47,8 +48,10 @@ impl SampleStar {
         let mut heatmap = HashMap::new();
         // let mut cached_paths = HashMap::new();
         self.grid.update_node_kern(self.current, self.radius);
-        self.grid.init_gridmap_radius(self.current, self.radius + 1); // +1 to account for previous update
+        // self.grid.init_gridmap_radius(self.current, self.radius + 1); // +1 to account for previous update
+        self.grid.init_gridmap_nearest();
         for _ in 0..self.epoch {
+            // self.grid.sample_all();
             self.grid.sample_radius(self.current, self.radius);
             let path = astar(
                 |n| self.grid.gridmap.adjacent1(*n),
@@ -58,21 +61,20 @@ impl SampleStar {
             );
             if let Some((path, _)) = path {
                 for node in path {
-                    let count = heatmap.entry(node).or_insert(1);
-                    *count += 1;
+                    *heatmap.entry(node).or_insert(0) += 1;
                 }
             }
         }
         let old = self.current;
-
-        self.current = self.grid.gridmap.adjacent(self.current, false)
-            .max_by_key(|n| heatmap.get(n))
+        self.current = self.grid.adjacent(self.current, false)
+            .filter(|n| heatmap.contains_key(n))
+            .max_by_key(|n| heatmap[n])
             .unwrap_or(self.current) // If no path exists stay at node
             .clone();
         self.final_path.push(self.current);
 
         if let Some(visualiser) = &self.visualiser {
-            visualiser.visualise_iteration(&self.grid, self.final_path.len(), Some(old), Some(self.current), &heatmap);
+            visualiser.visualise_iteration(&self.grid, self.final_path.len()-1, Some(old), Some(self.current), &heatmap);
         }
         false
     }
@@ -95,20 +97,24 @@ mod tests {
 
     #[test]
     fn test_samplestar() {
-        let file = "tests/basic.map";
-        let start = (1, 1);
-        let goal = (30, 30);
+        // let file = "tests/basic.map";
+        // let start = (1, 1);
+        // let goal = (30, 30);
         // let file = "tests/map.map";
         // let start = (225, 225);
         // let goal = (70, 40);
+        let file = "tests/wall/wall.map";
+        let start = (3, 1);
+        let goal = (3, 6);
         let mut grid = SampleGrid::new_from_file(file);
         grid.blur_samplegrid(5, 1.0);
-        let mut samplestar = SampleStar::new(grid, start, goal, 1, 2);
+        let mut samplestar = SampleStar::new(grid, start, goal, 10, 2);
         samplestar.add_visualiser("test");
 
-        // while !samplestar.step() {}
         for _ in 0..100 {
-            samplestar.step();
+            if samplestar.step() {
+                break;
+            }
         }
         samplestar.visualiser.as_ref().unwrap().visualise_final_path(&samplestar.final_path);
         assert!(false);

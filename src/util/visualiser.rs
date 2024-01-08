@@ -53,15 +53,18 @@ impl Visualiser {
     }
 
     pub fn visualise_final_path(&self, final_path: &Vec<(usize, usize)>) {
+        let mut paths = HashMap::new();
+        for node in final_path {
+            *paths.entry(*node).or_insert(0) += 1;
+        }
         let sample_grid = json!({
             "start": self.start,
             "goal": self.goal,
-            "paths": final_path 
+            "paths": hashmap_to_adjlist(&paths).iter().collect::<Vec<_>>(),
         });
         let mut file = File::create(format!("{}_final_path.json", self.file_path)).unwrap();
         serde_json::to_writer_pretty(&mut file, &sample_grid).unwrap();
     }
-    
 }
 
 fn get_sample_grid(grid: &SampleGrid) -> Vec<Vec<f32>> {
@@ -89,7 +92,7 @@ fn hashmap_to_adjlist(map: &HashMap<(usize, usize), usize>) -> AdjacencyList<(us
         }
     }
     for node in adjlist.iter_mut() {
-        for ((x, y), w) in node.iter_mut() {
+        for (_, w) in node.iter_mut() {
             *w = *w / max as f32;
         }
     }

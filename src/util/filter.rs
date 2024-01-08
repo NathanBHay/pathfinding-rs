@@ -17,10 +17,9 @@ impl KalmanNode {
     /// * `measurement` - The measurement to update the state with
     /// * `measurement_covariance` - The covariance of the measurement
     pub fn update(&mut self, measurement: f32, measurement_covariance: f32) -> f32 {
-        // As the model is 1D state and covariance predictions are the same
-        let kalman_gain = self.covariance / (self.covariance + measurement_covariance);
-        self.state = self.state + kalman_gain * (measurement - self.state);
-        self.covariance = (1.0 - kalman_gain) * self.covariance;
+        let kalman_gain = self.covariance / (self.covariance + measurement_covariance).max(1e-6);
+        self.state += kalman_gain * (measurement - self.state);
+        self.covariance *= 1.0 - kalman_gain;
         self.state
     }
 }
@@ -69,6 +68,8 @@ impl Mul<f32> for KalmanNode {
 
 #[cfg(test)]
 mod tests {
+    use std::f32::NAN;
+
     use super::*;
     #[test]
     fn test_kalman_filter() {
@@ -82,5 +83,12 @@ mod tests {
         let state = node.update(48.44, 25.0);
         assert_eq!(state, 49.327892);
         assert_eq!(node.covariance, 11.842108);
+
+        // Test for 0 / (0 + 0)
+        let mut node = KalmanNode {
+            state: 0.0,
+            covariance: 0.0,
+        };
+        assert_eq!(node.update(0.0, 0.0), 0.0);
     }
 }
